@@ -5,6 +5,8 @@ A comprehensive sentiment analysis system using Python, Strands, and agentic swa
 ## 🚀 Features
 
 - **Enhanced Multi-Modal Analysis**: Text, audio, video, images, and web content with comprehensive capabilities
+- **Translation Capabilities**: Foreign language translation to English with automatic language detection for text, URLs, audio, video, images, and PDFs
+- **Translation Memory**: Chroma vector DB integration for consistent translations
 - **Agentic Swarm Architecture**: Distributed processing with specialized enhanced agents
 - **MCP (Model Context Protocol) Integration**: FastMCP servers for each agent type
 - **YouTube Comprehensive Analysis**: Full audio/visual sentiment analysis of YouTube videos with yt-dlp integration
@@ -98,6 +100,7 @@ sentiment-analysis-swarm/
 │   │   ├── vision_agent_enhanced.py   # Enhanced vision with YouTube-DL
 │   │   ├── video_summarization_agent.py # Video summarization with large file support
 │   │   ├── web_agent_enhanced.py      # Enhanced web processing
+│   │   ├── translation_agent.py       # Translation agent with language detection
 │   │   └── orchestrator_agent.py      # Central orchestrator
 │   ├── mcp/                  # MCP servers for each agent
 │   │   ├── audio_agent_enhanced_server.py
@@ -280,54 +283,55 @@ The system provides MCP servers for each agent type:
 
 ### MCP Tools Available
 
-Each server exposes specialized tools:
+The unified MCP server exposes 34 specialized tools:
 
 ```python
-# Audio tools
-- transcribe_audio_enhanced
-- analyze_audio_sentiment_enhanced
-- extract_audio_features_enhanced
-- analyze_audio_quality
-- analyze_audio_emotion
-- process_audio_stream
-- get_audio_metadata
-- validate_audio_format
-- batch_analyze_audio_enhanced
+# Agent Management Tools (3)
+- get_all_agents_status
+- start_all_agents
+- stop_all_agents
 
-# Audio Summarization tools
-- generate_audio_summary
-- extract_key_points
-- identify_action_items
-- analyze_topics
-- process_large_audio_file
+# Text Analysis Tools (4)
+- analyze_text_sentiment (TextAgent)
+- analyze_text_simple (SimpleTextAgent)
+- analyze_text_strands (TextAgentStrands)
+- analyze_text_swarm (TextAgentSwarm)
 
-# Vision tools
+# Audio Analysis Tools (2)
+- analyze_audio_sentiment (EnhancedAudioAgent)
+- analyze_audio_summarization (AudioSummarizationAgent)
+
+# Vision Analysis Tools (2)
+- analyze_image_sentiment (EnhancedVisionAgent)
+- analyze_video_summarization (VideoSummarizationAgent)
+
+# Web Analysis Tools (1)
+- analyze_webpage_sentiment (EnhancedWebAgent)
+
+# Orchestrator Tools (2)
+- process_query_orchestrator
+- get_orchestrator_tools
+
+# YouTube Analysis Tools (2)
 - analyze_youtube_comprehensive
-- extract_youtube_metadata
-- analyze_youtube_thumbnail
-- analyze_image_enhanced
-- extract_video_frames
-- analyze_video_enhanced
+- analyze_video_unified
 
-# Video Summarization tools
-- generate_video_summary
-- extract_key_scenes
-- identify_key_moments
-- analyze_visual_content
-- create_scene_timeline
-- extract_video_metadata
-- analyze_video_sentiment
-- generate_executive_summary
-- create_video_transcript
-- analyze_video_topics
-- process_large_video_file
+# OCR Tools (5)
+- analyze_ocr_text_extraction
+- analyze_ocr_document
+- analyze_ocr_batch
+- analyze_ocr_report
+- analyze_ocr_optimize
 
-# Web tools
-- analyze_webpage_enhanced
-- extract_web_content
-- analyze_social_media
-- monitor_web_content
-- summarize_web_content
+# Translation Tools (7)
+- translate_text
+- translate_webpage
+- translate_audio
+- translate_video
+- translate_pdf
+- batch_translate
+- translate_text_comprehensive
+- analyze_chinese_news_comprehensive
 ```
 
 ## 📈 Usage Examples
@@ -507,10 +511,12 @@ MIT License - see LICENSE file for details
 
 **FINALIZED** - This project has been successfully completed and finalized with:
 
-- ✅ **Enhanced Agents**: All agents (Audio, Vision, Web, Text) fully implemented with comprehensive capabilities
-- ✅ **MCP Integration**: Complete MCP server support for all agent types
+- ✅ **Enhanced Agents**: All agents (Audio, Vision, Web, Text, OCR, Translation) fully implemented with comprehensive capabilities
+- ✅ **MCP Integration**: Complete MCP server support for all agent types with 34 tools
 - ✅ **Large File Processing**: Advanced chunking and progressive analysis for audio/video files
 - ✅ **Unified Video Analysis**: Multi-platform video support with YouTube-DL integration
+- ✅ **Translation Capabilities**: Comprehensive translation support for text, audio, video, and documents
+- ✅ **OCR Integration**: Advanced OCR capabilities with Ollama and Llama Vision
 - ✅ **Documentation**: Comprehensive documentation and examples
 - ✅ **Testing**: Full test coverage for all components
 - ✅ **Production Ready**: Clean architecture with archived legacy code
@@ -518,18 +524,25 @@ MIT License - see LICENSE file for details
 ### Final Project Structure
 ```
 sentiment-analysis-swarm/
-├── main.py                    # Main entry point with MCP integration
+├── main.py                    # Main entry point with unified MCP integration
 ├── src/
-│   ├── agents/               # Enhanced processing agents
+│   ├── agents/               # Enhanced processing agents (13 agents)
 │   ├── mcp/                  # MCP servers for each agent
-│   ├── core/                 # Core functionality
+│   ├── core/                 # Core functionality and models
 │   ├── api/                  # FastAPI endpoints
 │   ├── config/               # Configuration management
-│   └── archive/              # Archived legacy code
+│   └── archive/              # Archived legacy code and documentation
 ├── Test/                     # Test suite
 ├── Results/                  # Analysis results
 ├── docs/                     # Documentation
 ├── examples/                 # Example scripts
+├── scripts/                  # Utility scripts
+├── ui/                       # Streamlit web interface
+├── data/                     # Sample data
+├── models/                   # Model files
+├── chroma_db/                # Vector database
+├── cache/                    # Processing cache
+├── temp/                     # Temporary files
 └── README.md                 # This file
 ```
 

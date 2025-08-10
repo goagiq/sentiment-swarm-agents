@@ -267,6 +267,69 @@ class SentimentMCPServer:
             except Exception as e:
                 logger.error(f"Error in batch text analysis: {e}")
                 return [{"error": str(e)} for _ in texts]
+
+        @self.mcp.tool(description="Translate text with comprehensive analysis")
+        async def translate_text_comprehensive(
+            text: str = Field(..., description="Text content to translate and analyze"),
+            language: str = Field(default="en", description="Target language for translation")
+        ) -> Dict[str, Any]:
+            """Translate text content to English with automatic language detection and comprehensive analysis including summary and sentiment analysis."""
+            try:
+                from ..agents.translation_agent import TranslationAgent
+                
+                agent = TranslationAgent()
+                result = await agent.comprehensive_translate_and_analyze(text, include_analysis=True)
+                
+                return {
+                    "success": True,
+                    "agent": "translation_comprehensive",
+                    "translation": result["translation"],
+                    "sentiment_analysis": result.get("sentiment_analysis", {}),
+                    "summary_analysis": result.get("summary_analysis", {}),
+                    "processing_time": result["translation"]["processing_time"]
+                }
+                
+            except Exception as e:
+                logger.error(f"Comprehensive translation failed: {e}")
+                return {
+                    "success": False,
+                    "error": str(e),
+                    "agent": "translation_comprehensive"
+                }
+
+        @self.mcp.tool(description="Analyze Chinese news with comprehensive translation, summary, and sentiment analysis")
+        async def analyze_chinese_news_comprehensive(
+            text: str = Field(..., description="Chinese news content to analyze"),
+            language: str = Field(default="en", description="Target language for translation")
+        ) -> Dict[str, Any]:
+            """Analyze Chinese news content with comprehensive translation, sentiment analysis, and summarization."""
+            try:
+                from ..agents.translation_agent import TranslationAgent
+                
+                # Initialize translation agent
+                agent = TranslationAgent()
+                
+                # Perform dynamic news analysis
+                result = await agent.analyze_chinese_news_dynamic(text, include_timestamp=True)
+                
+                return {
+                    "success": True,
+                    "agent": "chinese_news_analysis",
+                    "original_text": text,
+                    "translation": result["translation"],
+                    "sentiment_analysis": result.get("sentiment_analysis", {}),
+                    "summary_analysis": result.get("summary_analysis", {}),
+                    "key_themes": result.get("key_themes", []),
+                    "processing_time": result["translation"]["processing_time"],
+                    "analysis_timestamp": "2025-08-10T09:16:15Z"
+                }
+            except Exception as e:
+                logger.error(f"Chinese news analysis failed: {e}")
+                return {
+                    "success": False,
+                    "error": str(e),
+                    "agent": "chinese_news_analysis"
+                }
     
     def run(self, host: str = "localhost", port: int = 8001, debug: bool = False):
         """Run the FastMCP server."""

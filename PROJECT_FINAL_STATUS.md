@@ -157,20 +157,19 @@ sentiment-analysis-swarm/
 ## 🔧 MCP Server Configuration
 
 ### Active MCP Servers
-- **Audio MCP Server**: Port 8008 - Enhanced audio processing tools
-- **Vision MCP Server**: Port 8007 - Enhanced vision with YouTube-DL tools
-- **Web MCP Server**: Port 8006 - Enhanced web processing tools
-- **Text MCP Server**: Port 8005 - Text processing tools
-- **Orchestrator MCP Server**: Port 8004 - Central orchestration tools
-- **Main MCP Server**: Port 8000 - Unified interface
+- **Unified MCP Server**: Port 8000 - All 34 tools in one server
 - **FastAPI Server**: Port 8001 - REST API endpoints
 
-### Available MCP Tools
-- **Audio Tools**: 10 specialized tools for audio processing
-- **Vision Tools**: 7 specialized tools for image/video processing
-- **Web Tools**: 6 specialized tools for web content analysis
-- **Text Tools**: 4 specialized tools for text processing
-- **Orchestrator Tools**: 3 specialized tools for coordination
+### Available MCP Tools (34 Total)
+- **Agent Management Tools**: 3 tools for agent status and control
+- **Text Analysis Tools**: 4 tools for different text processing approaches
+- **Audio Analysis Tools**: 2 tools for audio processing and summarization
+- **Vision Analysis Tools**: 2 tools for image and video analysis
+- **Web Analysis Tools**: 1 tool for web content analysis
+- **Orchestrator Tools**: 2 tools for coordination and query processing
+- **YouTube Analysis Tools**: 2 tools for comprehensive video analysis
+- **OCR Tools**: 5 tools for text extraction and document analysis
+- **Translation Tools**: 7 tools for comprehensive translation capabilities
 
 ## 🧪 Testing Coverage
 

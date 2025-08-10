@@ -152,6 +152,56 @@ class OllamaIntegration:
         except Exception as e:
             logger.error(f"Error checking model availability: {e}")
             return False
+    
+    async def generate_response(
+        self, 
+        model: str, 
+        prompt: str, 
+        max_tokens: int = 1000,
+        temperature: float = 0.7
+    ) -> str:
+        """Generate a response using the specified Ollama model."""
+        try:
+            import aiohttp
+            import json
+            
+            # Get model configuration
+            model_config = self.models.get(model)
+            if not model_config:
+                # Use default text model if specified model not found
+                model_config = self.models.get("text", self.models.get("llama3.2:latest"))
+            
+            if not model_config:
+                raise Exception(f"Model {model} not found and no default model available")
+            
+            # Prepare the request payload
+            payload = {
+                "model": model_config.model_id,
+                "prompt": prompt,
+                "stream": False,
+                "options": {
+                    "temperature": temperature,
+                    "num_predict": max_tokens
+                }
+            }
+            
+            # Make the request to Ollama
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    f"{self.host}/api/generate",
+                    json=payload,
+                    timeout=aiohttp.ClientTimeout(total=60)
+                ) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        return data.get("response", "")
+                    else:
+                        error_text = await response.text()
+                        raise Exception(f"Ollama API error: {response.status} - {error_text}")
+                        
+        except Exception as e:
+            logger.error(f"Error generating response with Ollama: {e}")
+            return f"Error generating response: {str(e)}"
 
 
 # Global Ollama integration instance

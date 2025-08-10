@@ -35,6 +35,7 @@ class DataType(str, Enum):
     VIDEO = "video"
     IMAGE = "image"
     WEBPAGE = "webpage"
+    PDF = "pdf"
     API_RESPONSE = "api_response"
     SOCIAL_MEDIA = "social_media"
 

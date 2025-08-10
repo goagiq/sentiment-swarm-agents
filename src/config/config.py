@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Dict, Any
 
 from pydantic_settings import BaseSettings
-from pydantic import Field
+from pydantic import Field, ConfigDict
 
 
 class ModelConfig(BaseSettings):
@@ -101,6 +101,11 @@ class APIConfig(BaseSettings):
 class SentimentConfig(BaseSettings):
     """Main configuration class."""
     
+    model_config = ConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8"
+    )
+    
     # Environment
     environment: str = "development"
     
@@ -133,10 +138,6 @@ class SentimentConfig(BaseSettings):
         "{time:YYYY-MM-DD HH:mm:ss} | {level} | "
         "{name}:{function}:{line} | {message}"
     )
-    
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

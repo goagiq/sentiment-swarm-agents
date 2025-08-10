@@ -1,22 +1,41 @@
 #!/usr/bin/env python3
 """
-Main entry point for the Sentiment Analysis API with MCP server integration.
-This file serves as the entry point when running the application and provides
-access to all agent swarm MCP tools following the @StrandsMCPServer pattern.
+Main entry point for the Sentiment Analysis Swarm system.
+Provides both MCP server and FastAPI server functionality.
 """
 
-import uvicorn
+# Suppress websockets deprecation warnings BEFORE any other imports
+import warnings
 import sys
+
+# Set warnings filter to ignore all websockets-related deprecation warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="websockets")
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="websockets.legacy")
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="websockets.server")
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="uvicorn.protocols.websockets")
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="uvicorn")
+warnings.filterwarnings("ignore", category=DeprecationWarning, message=".*websockets.*")
+warnings.filterwarnings("ignore", category=DeprecationWarning, message=".*WebSocketServerProtocol.*")
+
+# Custom warning filter function
+def ignore_websockets_warnings(message, category, filename, lineno, file=None, line=None):
+    """Custom warning filter to ignore websockets-related deprecation warnings."""
+    if category == DeprecationWarning:
+        if any(keyword in str(message).lower() for keyword in ['websockets', 'websocket']):
+            return True
+    return False
+
+# Add custom filter
+warnings.showwarning = ignore_websockets_warnings
+
 import os
-import asyncio
 import threading
-from pathlib import Path
-from typing import List, Optional
-from pydantic import BaseModel
+import uvicorn
+from typing import List, Dict, Any
 
 # Import MCP server before adding src to path to avoid conflicts
 try:
-    from mcp.server import FastMCP
+    from fastmcp import FastMCP
     MCP_AVAILABLE = True
 except ImportError:
     MCP_AVAILABLE = False
@@ -26,9 +45,9 @@ except ImportError:
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 # Import after path modification
+# flake8: noqa: E402
 from api.main import app
-
-# Import all agents
+from core.error_handler import with_error_handling
 from agents.text_agent import TextAgent
 from agents.text_agent_simple import SimpleTextAgent
 from agents.text_agent_strands import TextAgentStrands
@@ -40,9 +59,8 @@ from agents.audio_summarization_agent import AudioSummarizationAgent
 from agents.video_summarization_agent import VideoSummarizationAgent
 from agents.ocr_agent import OCRAgent
 from agents.orchestrator_agent import OrchestratorAgent, unified_video_analysis
+from agents.translation_agent import TranslationAgent
 from core.youtube_comprehensive_analyzer import YouTubeComprehensiveAnalyzer
-
-# Import models
 from core.models import (
     AnalysisRequest, 
     DataType,
@@ -92,9 +110,10 @@ class UnifiedMCPServer:
             self.agents["video_summary"] = VideoSummarizationAgent()
             self.agents["ocr"] = OCRAgent()
             self.agents["orchestrator"] = OrchestratorAgent()
+            self.agents["translation"] = TranslationAgent()
             self.agents["youtube"] = YouTubeComprehensiveAnalyzer()
             
-            print(f"✅ Initialized {len(self.agents)} agents")
+            print(f"✅ Initialized {len(self.agents)} agents including translation")
             
         except Exception as e:
             print(f"⚠️  Error initializing agents: {e}")
@@ -186,29 +205,24 @@ class UnifiedMCPServer:
             
             # Register text analysis tools
             @self.mcp.tool(description="Analyze text sentiment using TextAgent")
+            @with_error_handling("text_sentiment_analysis")
             async def analyze_text_sentiment(text: str, language: str = "en"):
                 """Analyze text sentiment using TextAgent."""
-                try:
-                    analysis_request = AnalysisRequest(
-                        data_type=DataType.TEXT,
-                        content=text,
-                        language=language
-                    )
-                    
-                    result = await self.agents["text"].process(analysis_request)
-                    
-                    return {
-                        "success": True,
-                        "agent": "text",
-                        "sentiment": result.sentiment.label,
-                        "confidence": result.sentiment.confidence,
-                        "processing_time": result.processing_time
-                    }
-                except Exception as e:
-                    return {
-                        "success": False,
-                        "error": str(e)
-                    }
+                analysis_request = AnalysisRequest(
+                    data_type=DataType.TEXT,
+                    content=text,
+                    language=language
+                )
+                
+                result = await self.agents["text"].process(analysis_request)
+                
+                return {
+                    "success": True,
+                    "agent": "text",
+                    "sentiment": result.sentiment.label,
+                    "confidence": result.sentiment.confidence,
+                    "processing_time": result.processing_time
+                }
             
             @self.mcp.tool(description="Analyze text sentiment using SimpleTextAgent")
             async def analyze_text_simple(text: str, language: str = "en"):
@@ -751,7 +765,272 @@ class UnifiedMCPServer:
                         "suggestion": "Check if image file is in supported format (JPG, PNG, etc.)"
                     }
 
-            print("✅ Registered 21 tools with streamable HTTP support")
+            # Register translation tools
+            @self.mcp.tool(description="Translate text content to English with automatic language detection")
+            async def translate_text(text: str, language: str = "en"):
+                """Translate text content to English with automatic language detection."""
+                try:
+                    analysis_request = AnalysisRequest(
+                        data_type=DataType.TEXT,
+                        content=text,
+                        language=language
+                    )
+                    
+                    result = await self.agents["translation"].process(analysis_request)
+                    
+                    return {
+                        "success": True,
+                        "agent": "translation",
+                        "original_text": result.metadata.get("translation", {}).get("original_text", text),
+                        "translated_text": result.extracted_text,
+                        "source_language": result.metadata.get("original_language", "unknown"),
+                        "translation_memory_hit": result.metadata.get("translation_memory_hit", False),
+                        "model_used": result.metadata.get("model_used", "unknown"),
+                        "processing_time": result.processing_time
+                    }
+                except Exception as e:
+                    return {
+                        "success": False,
+                        "error": str(e)
+                    }
+
+            @self.mcp.tool(description="Translate webpage content to English")
+            async def translate_webpage(url: str):
+                """Translate webpage content to English."""
+                try:
+                    analysis_request = AnalysisRequest(
+                        data_type=DataType.WEBPAGE,
+                        content=url,
+                        language="auto"
+                    )
+                    
+                    result = await self.agents["translation"].process(analysis_request)
+                    
+                    return {
+                        "success": True,
+                        "agent": "translation",
+                        "url": url,
+                        "original_text": result.metadata.get("translation", {}).get("original_text", ""),
+                        "translated_text": result.extracted_text,
+                        "source_language": result.metadata.get("original_language", "unknown"),
+                        "translation_memory_hit": result.metadata.get("translation_memory_hit", False),
+                        "model_used": result.metadata.get("model_used", "unknown"),
+                        "processing_time": result.processing_time
+                    }
+                except Exception as e:
+                    return {
+                        "success": False,
+                        "error": str(e)
+                    }
+
+            @self.mcp.tool(description="Translate audio content to English (transcribe and translate)")
+            async def translate_audio(audio_path: str):
+                """Translate audio content to English (transcribe and translate)."""
+                try:
+                    # Validate file existence
+                    if not os.path.exists(audio_path):
+                        return {
+                            "success": False,
+                            "error": f"Audio file not found: {audio_path}",
+                            "suggestion": "Please check the file path and ensure the file exists"
+                        }
+                    
+                    analysis_request = AnalysisRequest(
+                        data_type=DataType.AUDIO,
+                        content=audio_path,
+                        language="auto"
+                    )
+                    
+                    result = await self.agents["translation"].process(analysis_request)
+                    
+                    return {
+                        "success": True,
+                        "agent": "translation",
+                        "audio_path": audio_path,
+                        "original_text": result.metadata.get("translation", {}).get("original_text", ""),
+                        "translated_text": result.extracted_text,
+                        "source_language": result.metadata.get("original_language", "unknown"),
+                        "translation_memory_hit": result.metadata.get("translation_memory_hit", False),
+                        "model_used": result.metadata.get("model_used", "unknown"),
+                        "processing_time": result.processing_time
+                    }
+                except Exception as e:
+                    return {
+                        "success": False,
+                        "error": str(e),
+                        "suggestion": "Check if audio file is in supported format (MP3, WAV, FLAC, etc.)"
+                    }
+
+            @self.mcp.tool(description="Translate video content to English (extract audio/visual and translate)")
+            async def translate_video(video_path: str):
+                """Translate video content to English (extract audio/visual and translate)."""
+                try:
+                    # Validate file existence for local files
+                    if not video_path.startswith(('http://', 'https://', 'youtube.com', 'youtu.be')) and not os.path.exists(video_path):
+                        return {
+                            "success": False,
+                            "error": f"Video file not found: {video_path}",
+                            "suggestion": "Please check the file path and ensure the file exists"
+                        }
+                    
+                    analysis_request = AnalysisRequest(
+                        data_type=DataType.VIDEO,
+                        content=video_path,
+                        language="auto"
+                    )
+                    
+                    result = await self.agents["translation"].process(analysis_request)
+                    
+                    return {
+                        "success": True,
+                        "agent": "translation",
+                        "video_path": video_path,
+                        "original_text": result.metadata.get("translation", {}).get("original_text", ""),
+                        "translated_text": result.extracted_text,
+                        "source_language": result.metadata.get("original_language", "unknown"),
+                        "translation_memory_hit": result.metadata.get("translation_memory_hit", False),
+                        "model_used": result.metadata.get("model_used", "unknown"),
+                        "processing_time": result.processing_time
+                    }
+                except Exception as e:
+                    return {
+                        "success": False,
+                        "error": str(e),
+                        "suggestion": "Check if video file is in supported format (MP4, AVI, MOV, etc.)"
+                    }
+
+            @self.mcp.tool(description="Translate PDF content to English (extract text and translate)")
+            async def translate_pdf(pdf_path: str):
+                """Translate PDF content to English (extract text and translate)."""
+                try:
+                    # Validate file existence
+                    if not os.path.exists(pdf_path):
+                        return {
+                            "success": False,
+                            "error": f"PDF file not found: {pdf_path}",
+                            "suggestion": "Please check the file path and ensure the file exists"
+                        }
+                    
+                    analysis_request = AnalysisRequest(
+                        data_type=DataType.PDF,
+                        content=pdf_path,
+                        language="auto"
+                    )
+                    
+                    result = await self.agents["translation"].process(analysis_request)
+                    
+                    return {
+                        "success": True,
+                        "agent": "translation",
+                        "pdf_path": pdf_path,
+                        "original_text": result.metadata.get("translation", {}).get("original_text", ""),
+                        "translated_text": result.extracted_text,
+                        "source_language": result.metadata.get("original_language", "unknown"),
+                        "translation_memory_hit": result.metadata.get("translation_memory_hit", False),
+                        "model_used": result.metadata.get("model_used", "unknown"),
+                        "processing_time": result.processing_time
+                    }
+                except Exception as e:
+                    return {
+                        "success": False,
+                        "error": str(e),
+                        "suggestion": "Check if PDF file is valid and readable"
+                    }
+
+            @self.mcp.tool(description="Batch translate multiple content items to English")
+            async def batch_translate(requests: List[Dict[str, Any]]):
+                """Batch translate multiple content items to English."""
+                try:
+                    # Convert requests to AnalysisRequest objects
+                    analysis_requests = []
+                    for req in requests:
+                        analysis_requests.append(AnalysisRequest(
+                            data_type=DataType(req.get("data_type", "text")),
+                            content=req.get("content", ""),
+                            language=req.get("language", "auto")
+                        ))
+                    
+                    # Process batch translation
+                    results = await self.agents["translation"].batch_translate(analysis_requests)
+                    
+                    # Format results
+                    formatted_results = []
+                    for result in results:
+                        formatted_results.append({
+                            "success": result.status == "completed",
+                            "request_id": result.request_id,
+                            "original_text": result.metadata.get("translation", {}).get("original_text", ""),
+                            "translated_text": result.extracted_text,
+                            "source_language": result.metadata.get("original_language", "unknown"),
+                            "translation_memory_hit": result.metadata.get("translation_memory_hit", False),
+                            "model_used": result.metadata.get("model_used", "unknown"),
+                            "processing_time": result.processing_time,
+                            "error": result.metadata.get("error") if result.status == "failed" else None
+                        })
+                    
+                    return {
+                        "success": True,
+                        "agent": "translation",
+                        "total_requests": len(analysis_requests),
+                        "completed": len([r for r in formatted_results if r["success"]]),
+                        "failed": len([r for r in formatted_results if not r["success"]]),
+                        "results": formatted_results
+                    }
+                except Exception as e:
+                    return {
+                        "success": False,
+                        "error": str(e)
+                    }
+
+            @self.mcp.tool(description="Translate text with comprehensive analysis")
+            async def translate_text_comprehensive(text: str, language: str = "en"):
+                """Translate text content to English with automatic language detection and comprehensive analysis including summary and sentiment analysis."""
+                try:
+                    # Use the comprehensive translation method from the translation agent
+                    result = await self.agents["translation"].comprehensive_translate_and_analyze(text, include_analysis=True)
+                    
+                    return {
+                        "success": True,
+                        "agent": "translation_comprehensive",
+                        "translation": result["translation"],
+                        "sentiment_analysis": result.get("sentiment_analysis", {}),
+                        "summary_analysis": result.get("summary_analysis", {}),
+                        "processing_time": result["translation"]["processing_time"]
+                    }
+                except Exception as e:
+                    return {
+                        "success": False,
+                        "error": str(e),
+                        "agent": "translation_comprehensive"
+                    }
+
+            @self.mcp.tool(description="Analyze Chinese news with comprehensive translation, summary, and sentiment analysis")
+            async def analyze_chinese_news_comprehensive(text: str, language: str = "en"):
+                """Analyze Chinese news content with comprehensive translation, sentiment analysis, and summarization."""
+                try:
+                    # Use the dynamic news analysis method from the translation agent
+                    result = await self.agents["translation"].analyze_chinese_news_dynamic(text, include_timestamp=True)
+                    
+                    return {
+                        "success": True,
+                        "agent": "chinese_news_analysis",
+                        "original_text": text,
+                        "translation": result["translation"],
+                        "sentiment_analysis": result.get("sentiment_analysis", {}),
+                        "summary_analysis": result.get("summary_analysis", {}),
+                        "key_themes": result.get("key_themes", []),
+                        "news_analysis": result.get("news_analysis", {}),
+                        "processing_time": result["translation"]["processing_time"],
+                        "analysis_timestamp": result.get("analysis_timestamp", "")
+                    }
+                except Exception as e:
+                    return {
+                        "success": False,
+                        "error": str(e),
+                        "agent": "chinese_news_analysis"
+                    }
+
+            print("✅ Registered 34 tools with streamable HTTP support")
             
         except Exception as e:
             print(f"❌ Error registering tools: {e}")
@@ -787,7 +1066,7 @@ def start_mcp_server():
         
         print("✅ Unified MCP server with streamable HTTP started successfully")
         print("   - MCP Server: http://localhost:8000/mcp")
-        print("   - Available agents: text, text_simple, text_strands, text_swarm, audio, vision, web, audio_summary, video_summary, orchestrator, youtube")
+        print("   - Available agents: text, text_simple, text_strands, text_swarm, audio, vision, web, audio_summary, video_summary, orchestrator, translation, youtube")
         
         return mcp_server
         

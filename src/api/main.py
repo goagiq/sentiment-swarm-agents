@@ -2,25 +2,41 @@
 FastAPI application for the sentiment analysis system.
 """
 
+from contextlib import asynccontextmanager
 from typing import List, Optional
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from loguru import logger
 
 from core.orchestrator import SentimentOrchestrator
 from core.models import (
-    AnalysisRequest, AnalysisResult, DataType, SentimentResult,
-    ModelConfig
+    AnalysisRequest, AnalysisResult, ModelConfig
 )
 from config.config import config
+
+
+# Initialize orchestrator
+orchestrator = SentimentOrchestrator()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup and shutdown events."""
+    # Startup
+    logger.info("Starting Sentiment Analysis Swarm API")
+    yield
+    # Shutdown
+    logger.info("Shutting down Sentiment Analysis Swarm API")
+    await orchestrator.cleanup()
 
 
 # Initialize FastAPI app
 app = FastAPI(
     title="Sentiment Analysis Swarm API",
     description="AI-powered sentiment analysis using agent swarm architecture",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # Add CORS middleware
@@ -31,9 +47,6 @@ app.add_middleware(
     allow_methods=config.api.cors_methods,
     allow_headers=config.api.cors_headers,
 )
-
-# Initialize orchestrator
-orchestrator = SentimentOrchestrator()
 
 
 # Request models
@@ -84,8 +97,7 @@ class HealthResponse(BaseModel):
     agents: dict
     models: List[ModelConfig]
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Health check endpoint
@@ -234,20 +246,6 @@ async def get_agent_status():
         return await orchestrator.get_agent_status()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get agent status: {str(e)}")
-
-
-# Startup and shutdown events
-@app.on_event("startup")
-async def startup_event():
-    """Initialize system on startup."""
-    logger.info("Starting Sentiment Analysis Swarm API")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup resources on shutdown."""
-    logger.info("Shutting down Sentiment Analysis Swarm API")
-    await orchestrator.cleanup()
 
 
 # Root endpoint

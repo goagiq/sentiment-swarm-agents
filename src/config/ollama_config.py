@@ -110,6 +110,24 @@ class OptimizedOllamaConfig(BaseModel):
                 capabilities=["text", "sentiment_analysis"],
                 is_shared=True,
                 fallback_model="phi3:mini"
+            ),
+            "translation": OllamaModelConfig(
+                model_id="mistral-small3.1:latest",
+                temperature=0.3,
+                max_tokens=500,
+                keep_alive="10m",
+                capabilities=["translation", "multilingual"],
+                is_shared=True,
+                fallback_model="llama3.2:latest"
+            ),
+            "translation_fast": OllamaModelConfig(
+                model_id="phi3:mini",
+                temperature=0.2,
+                max_tokens=300,
+                keep_alive="5m",
+                capabilities=["translation", "fast"],
+                is_shared=True,
+                fallback_model="llama3.2:latest"
             )
         }
     )
@@ -133,7 +151,8 @@ class OptimizedOllamaConfig(BaseModel):
             "WebAgent": "web",
             "OrchestratorAgent": "orchestrator",
             "TextAgentSwarm": "swarm",
-            "SimpleTextAgent": "simple_text"
+            "SimpleTextAgent": "simple_text",
+            "TranslationAgent": "translation"
         }
     )
     

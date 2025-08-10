@@ -65,7 +65,7 @@ class SimpleTextAgentMCPServer:
     def _initialize_mcp(self):
         """Initialize the MCP server."""
         try:
-            from mcp.server import FastMCP
+            from fastmcp import FastMCP
             self.mcp = FastMCP("SimpleTextAgent Server")
             logger.info("FastMCP initialized successfully")
         except ImportError:

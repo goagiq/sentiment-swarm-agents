@@ -4931,6 +4931,7 @@ dependencies = [
     { name = "pandas" },
     { name = "pillow" },
     { name = "pydantic" },
+    { name = "pydantic-settings" },
     { name = "python-dotenv" },
     { name = "python-multipart" },
     { name = "redis" },
@@ -4948,6 +4949,7 @@ dependencies = [
     { name = "transformers" },
     { name = "typer" },
     { name = "uvicorn", extra = ["standard"] },
+    { name = "websockets" },
     { name = "yt-dlp" },
 ]
 
@@ -4982,7 +4984,7 @@ requires-dist = [
     { name = "celery", specifier = ">=5.3.0" },
     { name = "chromadb", specifier = ">=0.4.0" },
     { name = "click", specifier = ">=8.1.0" },
-    { name = "fastapi", specifier = ">=0.104.0" },
+    { name = "fastapi", specifier = ">=0.116.1" },
     { name = "fastmcp", specifier = ">=0.1.0" },
     { name = "flake8", marker = "extra == 'dev'", specifier = ">=6.1.0" },
     { name = "isort", marker = "extra == 'dev'", specifier = ">=5.12.0" },
@@ -4998,7 +5000,8 @@ requires-dist = [
     { name = "opencv-python", specifier = ">=4.8.0" },
     { name = "pandas", specifier = ">=2.1.0" },
     { name = "pillow", specifier = ">=10.0.0" },
-    { name = "pydantic", specifier = ">=2.5.0" },
+    { name = "pydantic", specifier = ">=2.11.7" },
+    { name = "pydantic-settings", specifier = ">=2.10.1" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.4.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.21.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.1.0" },
@@ -5018,7 +5021,8 @@ requires-dist = [
     { name = "torchvision", specifier = ">=0.16.0" },
     { name = "transformers", specifier = ">=4.35.0" },
     { name = "typer", specifier = ">=0.9.0" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.24.0" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.35.0" },
+    { name = "websockets", specifier = ">=15.0.1" },
     { name = "yt-dlp", specifier = ">=2023.12.0" },
 ]
 provides-extras = ["dev"]

@@ -126,6 +126,9 @@ class VectorDBManager:
         if hasattr(result.sentiment, 'reasoning') and result.sentiment.reasoning:
             metadata["reasoning"] = result.sentiment.reasoning[:500]  # Truncate long reasoning
         
+        # Filter out None values from metadata (ChromaDB doesn't accept None values)
+        metadata = {k: v for k, v in metadata.items() if v is not None}
+        
         return {
             "text": text_content,
             "metadata": metadata
