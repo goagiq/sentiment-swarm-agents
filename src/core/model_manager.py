@@ -21,36 +21,38 @@ class ModelManager:
     
     def _initialize_default_models(self):
         """Initialize default models in the registry."""
+        from src.config.config import config
+        
         # Default Ollama text model (fast and lightweight)
         text_model = ModelConfig(
-            model_id="llama3.2:latest",  # Use the actual available model
+            model_id=config.model.strands_text_model,
             model_type=ModelType.OLLAMA,
             capabilities=[ModelCapability.TEXT],
-            host="http://localhost:11434",
-            temperature=0.1,
-            max_tokens=100,
+            host=config.model.strands_ollama_host,
+            temperature=config.model.text_temperature,
+            max_tokens=config.model.text_max_tokens,
             is_default=True
         )
         
         # Default Ollama vision model
         vision_model = ModelConfig(
-            model_id="llava:latest",
+            model_id=config.model.strands_vision_model,
             model_type=ModelType.OLLAMA,
             capabilities=[ModelCapability.VISION, ModelCapability.TOOL_CALLING],
-            host="http://localhost:11434",
-            vision_temperature=0.7,
-            vision_max_tokens=200,
+            host=config.model.strands_ollama_host,
+            vision_temperature=config.model.vision_temperature,
+            vision_max_tokens=config.model.vision_max_tokens,
             is_default=True
         )
         
         # Default Ollama audio model
         audio_model = ModelConfig(
-            model_id="llava:latest",  # Can handle audio too
+            model_id=config.model.strands_vision_model,  # Same as vision
             model_type=ModelType.OLLAMA,
             capabilities=[ModelCapability.AUDIO, ModelCapability.TOOL_CALLING],
-            host="http://localhost:11434",
-            temperature=0.7,
-            max_tokens=200,
+            host=config.model.strands_ollama_host,
+            temperature=config.model.vision_temperature,
+            max_tokens=config.model.vision_max_tokens,
             is_default=True
         )
         
@@ -75,7 +77,8 @@ class ModelManager:
             return model
         
         # Fallback to text model for any data type
-        return self.registry.get_model("llama3.2:latest")
+        from src.config.config import config
+        return self.registry.get_model(config.model.strands_text_model)
     
     async def initialize_ollama(self):
         """Initialize Ollama connection."""

@@ -165,17 +165,37 @@ class EnhancedVisionAgent(BaseAgent):
                 model_type="vision"
             )
             
-            # Initialize sentiment pipeline
-            self.sentiment_pipeline = pipeline(
-                "sentiment-analysis",
-                model="cardiffnlp/twitter-roberta-base-sentiment-latest"
-            )
+            # Initialize sentiment pipeline with proper device handling
+            try:
+                import torch
+                # Check if CUDA is available and handle meta tensors properly
+                if torch.cuda.is_available():
+                    device = "cuda"
+                else:
+                    device = "cpu"
+                
+                # Use device_map="auto" to handle meta tensors properly
+                self.sentiment_pipeline = pipeline(
+                    "sentiment-analysis",
+                    model="cardiffnlp/twitter-roberta-base-sentiment-latest",
+                    device_map="auto" if device == "cuda" else None,
+                    torch_dtype=torch.float16 if device == "cuda" else torch.float32
+                )
+            except Exception as pipeline_error:
+                logger.warning(f"Failed to initialize sentiment pipeline: {pipeline_error}")
+                # Fallback to CPU-only initialization
+                self.sentiment_pipeline = pipeline(
+                    "sentiment-analysis",
+                    model="cardiffnlp/twitter-roberta-base-sentiment-latest",
+                    device_map=None
+                )
             
             logger.info(f"EnhancedVisionAgent {self.agent_id} initialized with Ollama and yt-dlp")
             
         except Exception as e:
             logger.error(f"Failed to initialize models: {e}")
-            raise
+            # Don't raise the error, just log it and continue without the pipeline
+            self.sentiment_pipeline = None
     
     async def _process_youtube_comprehensive(self, content: Any) -> Dict:
         """Process YouTube URLs with comprehensive analysis combining metadata and visual content."""

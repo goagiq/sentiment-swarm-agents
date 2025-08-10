@@ -45,89 +45,95 @@ class OllamaPerformanceConfig(BaseModel):
 class OptimizedOllamaConfig(BaseModel):
     """Main configuration for optimized Ollama integration."""
     
+    # Connection configuration - configurable through environment variables
+    host: str = Field(
+        default="http://localhost:11434",
+        description="Ollama server host URL"
+    )
+    
     # Model configurations for different agent types
     models: Dict[str, OllamaModelConfig] = Field(
         default_factory=lambda: {
             "text": OllamaModelConfig(
-                model_id="llama3.2:latest",
+                model_id="",  # Will be set from config
                 temperature=0.1,
-                max_tokens=100,
-                keep_alive="5m",
-                capabilities=["text", "sentiment_analysis"],
+                max_tokens=200,
+                keep_alive="10m",
+                capabilities=["text", "sentiment_analysis", "entity_extraction"],
                 is_shared=True,
-                fallback_model="phi3:mini"
+                fallback_model=""  # Will be set from config
             ),
             "vision": OllamaModelConfig(
-                model_id="llava:latest",
+                model_id="",  # Will be set from config
                 temperature=0.7,
                 max_tokens=200,
                 keep_alive="10m",
                 capabilities=["vision", "image_analysis"],
                 is_shared=True,
-                fallback_model="granite3.2-vision"
+                fallback_model=""  # Will be set from config
             ),
             "audio": OllamaModelConfig(
-                model_id="llava:latest",  # Same as vision for efficiency
+                model_id="",  # Will be set from config
                 temperature=0.7,
                 max_tokens=200,
                 keep_alive="10m",
                 capabilities=["audio", "transcription"],
                 is_shared=True,
-                fallback_model="llava:latest"
+                fallback_model=""  # Will be set from config
             ),
             "swarm": OllamaModelConfig(
-                model_id="llama3.2:latest",
+                model_id="",  # Will be set from config
                 temperature=0.3,
-                max_tokens=150,
-                keep_alive="5m",
-                capabilities=["coordination", "planning"],
+                max_tokens=200,
+                keep_alive="10m",
+                capabilities=["coordination", "planning", "entity_extraction"],
                 is_shared=True,
-                fallback_model="phi3:mini"
+                fallback_model=""  # Will be set from config
             ),
             "orchestrator": OllamaModelConfig(
-                model_id="llama3.2:latest",
+                model_id="",  # Will be set from config
                 temperature=0.2,
-                max_tokens=200,
-                keep_alive="5m",
-                capabilities=["coordination", "decision_making"],
+                max_tokens=300,
+                keep_alive="10m",
+                capabilities=["coordination", "decision_making", "entity_extraction"],
                 is_shared=True,
-                fallback_model="phi3:mini"
+                fallback_model=""  # Will be set from config
             ),
             "web": OllamaModelConfig(
-                model_id="llama3.2:latest",
+                model_id="",  # Will be set from config
                 temperature=0.1,
-                max_tokens=150,
-                keep_alive="5m",
-                capabilities=["text", "web_analysis"],
+                max_tokens=200,
+                keep_alive="10m",
+                capabilities=["text", "web_analysis", "entity_extraction"],
                 is_shared=True,
-                fallback_model="phi3:mini"
+                fallback_model=""  # Will be set from config
             ),
             "simple_text": OllamaModelConfig(
-                model_id="llama3.2:latest",
+                model_id="",  # Will be set from config
                 temperature=0.1,
-                max_tokens=100,
-                keep_alive="5m",
-                capabilities=["text", "sentiment_analysis"],
+                max_tokens=150,
+                keep_alive="10m",
+                capabilities=["text", "sentiment_analysis", "entity_extraction"],
                 is_shared=True,
-                fallback_model="phi3:mini"
+                fallback_model=""  # Will be set from config
             ),
             "translation": OllamaModelConfig(
-                model_id="mistral-small3.1:latest",
+                model_id="",  # Will be set from config
                 temperature=0.3,
                 max_tokens=500,
                 keep_alive="10m",
                 capabilities=["translation", "multilingual"],
                 is_shared=True,
-                fallback_model="llama3.2:latest"
+                fallback_model=""  # Will be set from config
             ),
             "translation_fast": OllamaModelConfig(
-                model_id="phi3:mini",
+                model_id="",  # Will be set from config
                 temperature=0.2,
                 max_tokens=300,
                 keep_alive="5m",
                 capabilities=["translation", "fast"],
                 is_shared=True,
-                fallback_model="llama3.2:latest"
+                fallback_model=""  # Will be set from config
             )
         }
     )
@@ -193,6 +199,42 @@ ollama_config = OptimizedOllamaConfig()
 def get_ollama_config() -> OptimizedOllamaConfig:
     """Get the global Ollama configuration."""
     return ollama_config
+
+
+def initialize_ollama_config_from_central():
+    """Initialize Ollama config from centralized configuration."""
+    from src.config.config import config
+    
+    # Update model configurations with values from centralized config
+    ollama_config.models["text"].model_id = config.model.strands_text_model
+    ollama_config.models["text"].fallback_model = config.model.fallback_text_model
+    
+    ollama_config.models["vision"].model_id = config.model.strands_vision_model
+    ollama_config.models["vision"].fallback_model = config.model.fallback_vision_model
+    
+    ollama_config.models["audio"].model_id = config.model.strands_vision_model  # Same as vision
+    ollama_config.models["audio"].fallback_model = config.model.fallback_vision_model
+    
+    ollama_config.models["swarm"].model_id = config.model.strands_text_model
+    ollama_config.models["swarm"].fallback_model = config.model.fallback_text_model
+    
+    ollama_config.models["orchestrator"].model_id = config.model.strands_text_model
+    ollama_config.models["orchestrator"].fallback_model = config.model.fallback_text_model
+    
+    ollama_config.models["web"].model_id = config.model.strands_text_model
+    ollama_config.models["web"].fallback_model = config.model.fallback_text_model
+    
+    ollama_config.models["simple_text"].model_id = config.model.strands_text_model
+    ollama_config.models["simple_text"].fallback_model = config.model.fallback_text_model
+    
+    ollama_config.models["translation"].model_id = config.model.strands_text_model
+    ollama_config.models["translation"].fallback_model = config.model.fallback_text_model
+    
+    ollama_config.models["translation_fast"].model_id = config.model.strands_translation_fast_model
+    ollama_config.models["translation_fast"].fallback_model = config.model.fallback_text_model
+    
+    # Update host from centralized config
+    ollama_config.host = config.model.strands_ollama_host
 
 
 def update_ollama_config(**kwargs) -> None:

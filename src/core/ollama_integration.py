@@ -5,6 +5,7 @@ This module provides Ollama model integration with proper fallback handling.
 
 from typing import Dict, List, Optional
 from loguru import logger
+from src.config.model_config import model_config
 
 
 class OllamaModel:
@@ -26,30 +27,33 @@ class OllamaModel:
 class OllamaIntegration:
     """Ollama integration manager."""
     
-    def __init__(self, host: str = "http://localhost:11434"):
-        self.host = host
+    def __init__(self, host: str = None):
+        # Use configurable host or default
+        self.host = host or model_config.get_ollama_host()
         self.models: Dict[str, OllamaModel] = {}
         self._initialize_default_models()
     
     def _initialize_default_models(self):
-        """Initialize default Ollama models."""
+        """Initialize default Ollama models using configurable settings."""
         try:
-            # Text model for sentiment analysis
+            # Get text model configuration
+            text_config = model_config.get_text_model_config()
             text_model = OllamaModel(
                 host=self.host,
-                model_id="llama3.2:latest",
-                temperature=0.1,  # Low temperature for consistent analysis
-                max_tokens=100,
+                model_id=text_config["model_id"],
+                temperature=text_config["temperature"],
+                max_tokens=text_config["max_tokens"],
                 keep_alive="5m"
             )
             self.models["text"] = text_model
             
-            # Vision model for image analysis
+            # Get vision model configuration (for audio, video, image)
+            vision_config = model_config.get_vision_model_config()
             vision_model = OllamaModel(
                 host=self.host,
-                model_id="llava:latest",
-                temperature=0.7,
-                max_tokens=200,
+                model_id=vision_config["model_id"],
+                temperature=vision_config["temperature"],
+                max_tokens=vision_config["max_tokens"],
                 keep_alive="10m"
             )
             self.models["vision"] = vision_model
@@ -57,14 +61,14 @@ class OllamaIntegration:
             # Audio model (using vision model that can handle audio)
             audio_model = OllamaModel(
                 host=self.host,
-                model_id="llava:latest",
-                temperature=0.7,
-                max_tokens=200,
+                model_id=vision_config["model_id"],  # Same as vision
+                temperature=vision_config["temperature"],
+                max_tokens=vision_config["max_tokens"],
                 keep_alive="10m"
             )
             self.models["audio"] = audio_model
             
-            logger.info("Ollama models initialized successfully")
+            logger.info("Ollama models initialized with configurable settings")
             
         except Exception as e:
             logger.error(f"Failed to initialize Ollama models: {e}")

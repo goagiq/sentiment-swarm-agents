@@ -20,7 +20,7 @@ class VectorDBManager:
     """Manages ChromaDB vector database for sentiment analysis results."""
     
     def __init__(self, persist_directory: Optional[str] = None):
-        self.persist_directory = persist_directory or str(settings.CHROMA_PERSIST_DIR)
+        self.persist_directory = persist_directory or str(settings.paths.cache_dir / "chroma_db")
         
         # Ensure directory exists
         Path(self.persist_directory).mkdir(parents=True, exist_ok=True)

@@ -63,7 +63,7 @@ class MCPClientConfig(BaseModel):
     
     # Agent settings
     enable_agent_integration: bool = Field(default=True, description="Enable Strands agent integration")
-    agent_model: str = Field(default="ollama:qwen2.5-coder:1.5b-base", description="Agent model")
+    agent_model: str = Field(default="qwen2.5-coder:1.5b-base", description="Agent model")
     
     # Tool settings
     enable_tool_discovery: bool = Field(default=True, description="Enable automatic tool discovery")

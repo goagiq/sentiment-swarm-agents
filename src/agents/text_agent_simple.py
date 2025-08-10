@@ -7,9 +7,9 @@ from typing import Any, Optional
 
 from loguru import logger
 
-from agents.base_agent import BaseAgent
-from config.config import config
-from core.models import (
+from src.agents.base_agent import BaseAgent
+from src.config.config import config
+from src.core.models import (
     AnalysisRequest, 
     AnalysisResult, 
     DataType, 
@@ -134,9 +134,13 @@ class SimpleTextAgent(BaseAgent):
             # Simple sentiment analysis using Ollama
             import aiohttp
             
+            # Get model configuration from config
+            from src.config.config import config
+            model_config = config.get_strands_model_config("simple_text")
+            
             async with aiohttp.ClientSession() as session:
                 payload = {
-                    "model": "phi3:mini",
+                    "model": model_config["model_id"],
                     "prompt": f"""You are a sentiment analysis expert. Analyze the sentiment of this text and respond with exactly one word: POSITIVE, NEGATIVE, or NEUTRAL.
 
 Text: {text}
@@ -144,8 +148,8 @@ Text: {text}
 Sentiment (one word only):""",
                     "stream": False,
                     "options": {
-                        "temperature": 0.1,
-                        "num_predict": 5,
+                        "temperature": model_config["temperature"],
+                        "num_predict": model_config["max_tokens"],
                         "top_k": 1,
                         "top_p": 0.1
                     }

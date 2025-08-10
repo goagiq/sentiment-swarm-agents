@@ -45,7 +45,7 @@ class TranslationAgent(StrandsBaseAgent):
     def __init__(self, agent_id: Optional[str] = None):
         super().__init__(
             agent_id=agent_id or "translation_agent",
-            model_name="ollama:mistral-small3.1:latest"
+            model_name="mistral-small3.1:latest"
         )
         
         # Initialize Ollama client for translation
@@ -58,12 +58,16 @@ class TranslationAgent(StrandsBaseAgent):
         # Initialize Chroma vector DB for translation memory
         self.vector_db = VectorDBManager()
         
+        # Get model configuration from config
+        from src.config.config import config
+        model_config = config.get_strands_model_config("translation_fast")
+        
         # Translation models configuration
         self.translation_models = {
-            "primary": "mistral-small3.1:latest",
-            "fallback": "llama3.2:latest",
-            "vision": "llava:latest",
-            "fast": "phi3:mini"
+            "primary": config.model.strands_text_model,
+            "fallback": config.model.fallback_text_model,
+            "vision": config.model.strands_vision_model,
+            "fast": model_config["model_id"]
         }
         
         # Language detection patterns
@@ -612,7 +616,7 @@ English translation:"""
                 """
                 
                 summary_response = await self.ollama_client.generate_response(
-                    model=self.translation_models["primary"],
+                    model="text",
                     prompt=summary_prompt,
                     max_tokens=1000
                 )

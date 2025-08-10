@@ -157,9 +157,13 @@ class TextAgent(BaseAgent):
             # Simple sentiment analysis using Ollama
             import aiohttp
             
+            # Get model configuration from config
+            from src.config.config import config
+            model_config = config.get_strands_model_config("text")
+            
             async with aiohttp.ClientSession() as session:
                 payload = {
-                    "model": "phi3:mini",
+                    "model": model_config["model_id"],
                     "prompt": f"""Analyze the sentiment of this text and respond with exactly one word: POSITIVE, NEGATIVE, or NEUTRAL.
 
 Text: {text}
@@ -167,8 +171,8 @@ Text: {text}
 Sentiment:""",
                     "stream": False,
                     "options": {
-                        "temperature": 0.1,
-                        "num_predict": 10,
+                        "temperature": model_config["temperature"],
+                        "num_predict": model_config["max_tokens"],
                         "top_k": 1,
                         "top_p": 0.1
                     }

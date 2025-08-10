@@ -210,6 +210,9 @@ data/*.ogg
 data/*.aac
 data/*.wma
 data/*.opus
+data/*.pdf
+data/*.md
+data/*.mp*
 
 # Database files
 *.db
@@ -222,6 +225,9 @@ models/
 cache/
 temp/
 tmp/
+
+# Results directory
+Results/
 
 # Log files
 *.log

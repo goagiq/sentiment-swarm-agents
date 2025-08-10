@@ -25,7 +25,7 @@ class Agent:
     def __init__(
         self, 
         name: str, 
-        model: str = "ollama:llama3.2:latest",
+        model: str = "llama3.2:latest",
         tools: Optional[List[Tool]] = None,
         system_prompt: Optional[str] = None
     ):
@@ -106,7 +106,7 @@ class StrandsFramework:
         self.agents: Dict[str, Agent] = {}
         self.tools: Dict[str, Tool] = {}
         
-    def create_agent(self, name: str, model: str = "ollama:llama3.2:latest") -> Agent:
+    def create_agent(self, name: str, model: str = "llama3.2:latest") -> Agent:
         """Create a new agent."""
         agent = Agent(name, model)
         self.agents[name] = agent
@@ -130,7 +130,7 @@ class Swarm:
                  repetitive_handoff_detection_window: int = 8, 
                  repetitive_handoff_min_unique_agents: int = 3):
         self.agents = agents
-        self.coordinator = Agent("swarm_coordinator", "ollama:llama3.2:latest")
+        self.coordinator = Agent("swarm_coordinator", "llama3.2:latest")
         self.max_handoffs = max_handoffs
         self.max_iterations = max_iterations
         self.execution_timeout = execution_timeout
@@ -190,7 +190,7 @@ def tool(name: str, description: str = ""):
     return decorator
 
 
-def agent(name: str, model: str = "ollama:llama3.2:latest"):
+def agent(name: str, model: str = "llama3.2:latest"):
     """Decorator to create agents."""
     def decorator(cls):
         # Create agent instance

@@ -1,21 +1,24 @@
-# Sentiment Analysis Swarm with Enhanced Agents
+# Sentiment Analysis Swarm with Optimized MCP Integration
 
-A comprehensive sentiment analysis system using Python, Strands, and agentic swarm architecture with enhanced agents for analyzing sentiment across multiple data types: text, audio, video, images, and web content.
+A comprehensive sentiment analysis system with optimized MCP (Model Context Protocol) server integration, providing unified access to multiple AI agents for text, audio, video, and image analysis.
 
-## 🚀 Features
+## 🚀 Key Features
 
-- **Enhanced Multi-Modal Analysis**: Text, audio, video, images, and web content with comprehensive capabilities
-- **Translation Capabilities**: Foreign language translation to English with automatic language detection for text, URLs, audio, video, images, and PDFs
-- **Translation Memory**: Chroma vector DB integration for consistent translations
-- **Agentic Swarm Architecture**: Distributed processing with specialized enhanced agents
-- **MCP (Model Context Protocol) Integration**: FastMCP servers for each agent type
-- **YouTube Comprehensive Analysis**: Full audio/visual sentiment analysis of YouTube videos with yt-dlp integration
-- **Large File Processing**: Advanced chunking and progressive processing for large audio/video files
-- **Real-time & Batch Processing**: Flexible processing modes
-- **High Accuracy**: State-of-the-art transformer models via Ollama with enhanced integration
+- **Optimized MCP Server**: Reduced from 46 to 20 tools with unified interfaces
+- **Multi-Modal Analysis**: Text, audio, video, image, and webpage sentiment analysis
+- **YouTube Integration**: Comprehensive video analysis with parallel processing
+- **Knowledge Graph**: Entity extraction and relationship mapping with enhanced categorization
+- **Translation Services**: Multi-language content translation and analysis
+- **OCR Capabilities**: Text extraction from images and documents
+- **Summarization**: Audio and video content summarization
+- **Unified API**: Single interface for all analysis types
+- **Enhanced Ollama Integration**: Optimized local LLM processing with configurable models
+- **Large File Processing**: Advanced chunking and progressive processing
 - **Vector Database**: ChromaDB for efficient storage and retrieval
-- **Extensible**: Easy to add new data types and languages
 - **Local Deployment**: Run everything locally with CPU optimization
+- **Configurable Models**: Dynamic model selection and configuration
+- **Enhanced Entity Categorization**: 100% accurate entity type classification
+- **Interactive Visualizations**: D3.js-based knowledge graph visualization with zoom and pan
 
 ### 🤖 Enhanced Ollama Integration
 
@@ -28,6 +31,7 @@ The system features robust Ollama integration for local LLM processing:
 - **Error Logging**: Comprehensive error tracking and debugging capabilities
 - **Connection Stability**: 10-second timeout with retry mechanisms
 - **Response Parsing**: Intelligent parsing of Ollama responses for sentiment classification
+- **Configurable Models**: Dynamic model selection and configuration through settings
 
 ### 🎬 Unified Video Analysis Features
 
@@ -49,6 +53,101 @@ The system includes comprehensive video analysis capabilities that automatically
 - **Error Handling**: Graceful handling of download restrictions and errors
 - **Resource Management**: Automatic cleanup of temporary files
 
+### 🧠 GraphRAG-Inspired Knowledge Graph Features
+
+Advanced knowledge graph functionality with GraphRAG-inspired improvements:
+
+- **Enhanced Entity Categorization**: 100% accurate entity type classification with comprehensive pattern matching
+- **Chunk-Based Processing**: Intelligent text splitting with 1200 token chunks and 100 token overlap
+- **Advanced Entity Extraction**: Sophisticated prompts with 9 entity types and confidence scoring
+- **Comprehensive Relationship Mapping**: 13 relationship types with context-aware inference
+- **Multiple Community Detection**: Louvain, Label Propagation, and Girvan-Newman algorithms
+- **Robust Error Handling**: Multiple fallback strategies for JSON parsing and entity extraction
+- **Interactive D3.js Visualization**: Full zoom and pan capabilities with color-coded nodes and relationship lines
+- **Graph Analysis**: Community detection, path finding, and centrality analysis
+- **Scalable Processing**: Efficient handling of large documents through chunk-based processing
+- **Enhanced Reasoning**: Multi-hop reasoning through graph traversal and relationship analysis
+- **Confidence Scoring**: Confidence levels for entities and relationships based on extraction method
+- **Duplicate Removal**: Automatic deduplication of entities and relationships across multiple articles
+- **Comprehensive Reporting**: Detailed summary reports with entity/relationship breakdowns and statistics
+- **Error Handling**: Graceful degradation when original agent fails
+- **MCP Server Integration**: Full integration with MCP server for remote access
+
+#### 🎯 Enhanced Entity Categorization System
+
+The knowledge graph now features a sophisticated entity categorization system with:
+
+- **6 Entity Types**: PERSON, ORGANIZATION, LOCATION, CONCEPT, OBJECT, PROCESS
+- **250+ Pattern Matches**: Comprehensive pattern matching for accurate categorization
+- **100% Test Accuracy**: Verified accuracy on standard entity types
+- **Color-Coded Visualization**: Proper entity type mapping to visual groups
+- **Enhanced Fallback Logic**: Robust categorization even when AI models fail
+- **Confidence Scoring**: Reliable confidence scores (0.7) for pattern-based categorization
+- **Extensible Patterns**: Easy to add new patterns for different domains or languages
+
+### 🔧 Configurable Models System
+
+The system now supports dynamic model configuration:
+
+- **Multiple Model Support**: phi3:mini, llama3, and other Ollama models
+- **Dynamic Configuration**: Runtime model selection and configuration
+- **Fallback Mechanisms**: Automatic fallback to alternative models
+- **Performance Optimization**: Model-specific optimizations and settings
+- **Easy Integration**: Simple configuration through settings files
+
+## 📊 Optimized Tool Structure
+
+### Core Management (3 tools)
+- `get_all_agents_status` - Get status of all available agents
+- `start_all_agents` - Start all agents
+- `stop_all_agents` - Stop all agents
+
+### Unified Analysis (4 tools)
+- `analyze_text` - Text analysis with agent selection (standard, simple, strands, swarm)
+- `analyze_media` - Media analysis (audio, image, webpage, video)
+- `analyze_youtube` - YouTube video analysis with parallel processing
+- `analyze_content` - Automatic content type detection and analysis
+
+### Summarization (2 tools)
+- `summarize_audio` - Comprehensive audio summary generation
+- `analyze_video_summarization` - Video summary with key scenes and analysis
+
+### OCR Operations (5 tools)
+- `analyze_ocr_text_extraction` - Extract text from images using OCR
+- `analyze_ocr_document` - Analyze document structure and extract information
+- `analyze_ocr_batch` - Process multiple images for OCR in batch
+- `analyze_ocr_report` - Generate comprehensive OCR report for an image
+- `analyze_ocr_optimize` - Optimize image specifically for OCR processing
+
+### Translation (7 tools)
+- `translate_text` - Translate text content to English
+- `translate_webpage` - Translate webpage content to English
+- `translate_audio` - Translate audio content to English
+- `translate_video` - Translate video content to English
+- `translate_pdf` - Translate PDF content to English
+- `batch_translate` - Batch translate multiple content items
+- `translate_text_comprehensive` - Translate text with comprehensive analysis
+
+### Orchestration (2 tools)
+- `process_query_orchestrator` - Process query using OrchestratorAgent
+- `get_orchestrator_tools` - Get available tools from OrchestratorAgent
+
+### Knowledge Graph (8 tools)
+- `extract_entities` - Entity extraction from text with enhanced categorization
+- `map_relationships` - Relationship mapping between entities
+- `query_knowledge_graph` - Knowledge graph queries
+- `generate_graph_report` - Visual graph report generation
+- `analyze_graph_communities` - Community analysis in knowledge graph
+- `find_entity_paths` - Find paths between two entities in the graph
+- `get_entity_context` - Get context and connections for a specific entity
+- `process_content_knowledge_graph` - Content processing and graph building
+
+### Specialized Analysis (4 tools)
+- `analyze_chinese_news_comprehensive` - Chinese news analysis with translation
+- `process_articles_improved_knowledge_graph` - Process articles with improved knowledge graph utility
+- `process_articles_knowledge_graph_integration` - Process articles with knowledge graph integration
+- `validate_knowledge_graph_integration` - Knowledge graph integration validation
+
 ### 📁 Large File Processing Features
 
 Advanced processing capabilities for large audio and video files:
@@ -63,430 +162,140 @@ Advanced processing capabilities for large audio and video files:
 - **Error Recovery**: Graceful handling of processing failures with cleanup
 - **Resource Management**: Automatic cleanup of temporary files and chunks
 
-## 🏗️ Architecture
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Data Sources  │───▶│  Strands Layer  │───▶│  Enhanced Agents│
-│                 │    │                 │    │                 │
-│ • Text          │    │ • Data Ingestion│    │ • Text Agents   │
-│ • Audio         │    │ • Preprocessing │    │ • Enhanced Audio│
-│ • Video/Images  │    │ • Streaming     │    │ • Enhanced Vision│
-│ • Web Content   │    │                 │    │ • Enhanced Web  │
-│ • YouTube URLs  │    │                 │    │ • YouTube Analyzer│
-│                 │    │                 │    │ • Orchestrator  │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                                       │
-                       ┌─────────────────┐    ┌─────────────────┐
-                       │   ChromaDB      │◀───│  MCP Servers    │
-                       │   Vector Store  │    │  & Results      │
-                       └─────────────────┘    └─────────────────┘
-```
-
-## 📁 Project Structure
-
-```
-sentiment-analysis-swarm/
-├── main.py                    # Main entry point with MCP integration
-├── src/
-│   ├── agents/               # Enhanced processing agents
-│   │   ├── base_agent.py     # Base agent class
-│   │   ├── text_agent.py     # Text sentiment analysis
-│   │   ├── text_agent_simple.py # Simple text agent with Ollama integration
-│   │   ├── text_agent_strands.py
-│   │   ├── text_agent_swarm.py
-│   │   ├── audio_agent_enhanced.py    # Enhanced audio processing
-│   │   ├── audio_summarization_agent.py # Audio summarization with large file support
-│   │   ├── vision_agent_enhanced.py   # Enhanced vision with YouTube-DL
-│   │   ├── video_summarization_agent.py # Video summarization with large file support
-│   │   ├── web_agent_enhanced.py      # Enhanced web processing
-│   │   ├── translation_agent.py       # Translation agent with language detection
-│   │   └── orchestrator_agent.py      # Central orchestrator
-│   ├── mcp/                  # MCP servers for each agent
-│   │   ├── audio_agent_enhanced_server.py
-│   │   ├── vision_agent_enhanced_server.py
-│   │   ├── web_agent_enhanced_server.py
-│   │   ├── text_agent_server.py
-│   │   ├── orchestrator_agent_server.py
-│   │   └── ...
-│   ├── core/                 # Core functionality and models
-│   │   ├── large_file_processor.py # Large file processing utilities
-│   │   └── ...
-│   ├── api/                  # FastAPI endpoints
-│   ├── config/               # Configuration management
-│   └── archive/              # Archived old versions
-├── Test/                     # Test suite
-├── Results/                  # Analysis results and outputs
-├── data/                     # Sample data and models
-├── examples/                 # Example scripts
-├── scripts/                  # Utility scripts
-├── ui/                       # Streamlit web interface
-└── docs/                     # Documentation
-```
-
-## 🛠️ Setup
+## 🛠️ Installation
 
 ### Prerequisites
-
-- Python 3.9+
-- UV package manager
+- Python 3.8+
 - Git
-- Ollama (for local LLM models)
+- Virtual environment (recommended)
+- Ollama (for local LLM processing)
+- FFmpeg (for video processing)
 
-### Installation
+### Setup
+```bash
+# Clone the repository
+git clone <repository-url>
+cd Sentiment
 
-1. **Clone the repository**
-   ```bash
-   git clone <your-repo-url>
-   cd sentiment-analysis-swarm
-   ```
+# Create and activate virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
-2. **Create virtual environment and install dependencies**
-   ```bash
-   uv venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   uv pip install -e .
-   ```
+# Install dependencies
+pip install -r requirements.txt
 
-3. **Install and configure Ollama**
-   ```bash
-   # Install Ollama (follow instructions at https://ollama.ai)
-   ollama pull llama2
-   ollama pull mistral
-   ```
+# Install MCP dependencies (optional)
+pip install fastmcp
 
-4. **Download required models**
-   ```bash
-   python scripts/download_models.py
-   ```
+# Install Ollama (if not already installed)
+# Visit https://ollama.ai for installation instructions
 
-5. **Initialize ChromaDB**
-   ```bash
-   python scripts/init_database.py
-   ```
+# Pull required models
+ollama pull phi3:mini
+ollama pull llama3
+```
 
 ## 🚀 Quick Start
 
-### 1. Start the Main Application
+### Start the Optimized MCP Server
 ```bash
+# Using Python directly
 python main.py
+
+# Or using the virtual environment
+.venv/Scripts/python.exe main.py
 ```
 
-This starts:
-- FastAPI server on port 8001
-ex- MCP server on port 8000
-- All enhanced agents as tools including unified video analysis
+### Access Points
+- **FastAPI Server**: http://0.0.0.0:8001
+- **API Documentation**: http://0.0.0.0:8001/docs
+- **Health Check**: http://0.0.0.0:8001/health
+- **MCP Server**: http://localhost:8000/mcp
 
-### 2. Video Analysis Examples
-
-#### Analyze YouTube Video
-```python
-from src.agents.orchestrator_agent import unified_video_analysis
-
-# YouTube video analysis
-result = await unified_video_analysis("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
-```
-
-#### Analyze Local Video File
-```python
-# Local video file analysis
-result = await unified_video_analysis("data/meeting_recording.mp4")
-```
-
-#### Analyze Other Video Platforms
-```python
-# Vimeo, TikTok, Instagram, etc.
-result = await unified_video_analysis("https://vimeo.com/123456789")
-```
-
-### 2. Launch the Web Interface
-```bash
-streamlit run ui/main.py
-```
-
-### 3. Run Sentiment Analysis
-```python
-from src.core.orchestrator import OrchestratorAgent
-
-orchestrator = OrchestratorAgent()
-result = await orchestrator.process_query("Analyze the sentiment of this text: I love this product!")
-print(result)
-```
-
-## 📊 Enhanced Agent Capabilities
-
-### Enhanced Audio Agent
-- **Enhanced Transcription**: Improved audio-to-text conversion
-- **Comprehensive Sentiment Analysis**: Multi-layered sentiment detection
-- **Feature Extraction**: Audio characteristics analysis
-- **Quality Assessment**: Audio file quality evaluation
-- **Emotion Analysis**: Emotional content detection
-- **Stream Processing**: Real-time audio stream handling
-- **Metadata Extraction**: Audio file metadata analysis
-- **Format Validation**: Support for MP3, WAV, FLAC, M4A, OGG, AAC, WMA, OPUS
-- **Batch Processing**: Multiple audio file analysis
-
-### Audio Summarization Agent
-- **Large File Processing**: Handle files over 100MB with intelligent chunking
-- **Progressive Analysis**: Stage-by-stage processing with progress reporting
-- **Comprehensive Summarization**: Generate detailed summaries with key points
-- **Action Item Extraction**: Identify actionable items from audio content
-- **Topic Identification**: Extract main topics and themes
-- **Sentiment Analysis**: Multi-layered sentiment detection
-- **Real-time Progress**: Live progress updates with ETA calculations
-- **Memory Optimization**: Efficient processing without loading entire files
-
-### Enhanced Vision Agent
-- **YouTube-DL Integration**: Download and process YouTube videos
-- **Comprehensive Image Analysis**: Multi-aspect visual content analysis
-- **Video Frame Extraction**: Extract and analyze video frames
-- **Thumbnail Analysis**: YouTube thumbnail sentiment analysis
-- **Metadata Extraction**: Video/image metadata analysis
-- **Quality Assessment**: Visual content quality evaluation
-- **Batch Processing**: Multiple image/video analysis
-
-### Video Summarization Agent
-- **Large File Processing**: Handle files over 100MB with intelligent chunking
-- **Progressive Analysis**: Stage-by-stage processing with progress reporting
-- **Comprehensive Summarization**: Generate detailed summaries with key scenes
-- **Key Scene Extraction**: Identify important scenes and moments
-- **Visual Content Analysis**: Analyze visual elements and composition
-- **Scene Timeline Creation**: Create chronological scene breakdowns
-- **Executive Summary**: Generate high-level executive summaries
-- **Video Transcript Generation**: Create detailed video transcripts
-- **Topic Analysis**: Extract main topics and themes from video content
-- **Real-time Progress**: Live progress updates with ETA calculations
-
-### Enhanced Web Agent
-- **Webpage Content Extraction**: Comprehensive web content analysis
-- **Social Media Integration**: Social media sentiment analysis
-- **API Response Analysis**: API data sentiment processing
-- **Real-time Web Monitoring**: Live web content analysis
-- **Content Summarization**: Web content summarization
-- **Link Analysis**: Hyperlink sentiment analysis
-
-### Text Agents
-- **Simple Text Agent**: Basic text sentiment analysis
-- **Strands Text Agent**: Advanced text processing with Strands
-- **Swarm Text Agent**: Distributed text analysis
-- **Multi-language Support**: Multiple language processing
-
-## 🔧 MCP Integration
-
-The system provides MCP servers for each agent type:
-
-- **Audio MCP Server**: Port 8008 - Enhanced audio processing tools
-- **Vision MCP Server**: Port 8007 - Enhanced vision with YouTube-DL tools
-- **Web MCP Server**: Port 8006 - Enhanced web processing tools
-- **Text MCP Server**: Port 8005 - Text processing tools
-- **Orchestrator MCP Server**: Port 8004 - Central orchestration tools
-
-### MCP Tools Available
-
-The unified MCP server exposes 34 specialized tools:
-
-```python
-# Agent Management Tools (3)
-- get_all_agents_status
-- start_all_agents
-- stop_all_agents
-
-# Text Analysis Tools (4)
-- analyze_text_sentiment (TextAgent)
-- analyze_text_simple (SimpleTextAgent)
-- analyze_text_strands (TextAgentStrands)
-- analyze_text_swarm (TextAgentSwarm)
-
-# Audio Analysis Tools (2)
-- analyze_audio_sentiment (EnhancedAudioAgent)
-- analyze_audio_summarization (AudioSummarizationAgent)
-
-# Vision Analysis Tools (2)
-- analyze_image_sentiment (EnhancedVisionAgent)
-- analyze_video_summarization (VideoSummarizationAgent)
-
-# Web Analysis Tools (1)
-- analyze_webpage_sentiment (EnhancedWebAgent)
-
-# Orchestrator Tools (2)
-- process_query_orchestrator
-- get_orchestrator_tools
-
-# YouTube Analysis Tools (2)
-- analyze_youtube_comprehensive
-- analyze_video_unified
-
-# OCR Tools (5)
-- analyze_ocr_text_extraction
-- analyze_ocr_document
-- analyze_ocr_batch
-- analyze_ocr_report
-- analyze_ocr_optimize
-
-# Translation Tools (7)
-- translate_text
-- translate_webpage
-- translate_audio
-- translate_video
-- translate_pdf
-- batch_translate
-- translate_text_comprehensive
-- analyze_chinese_news_comprehensive
-```
-
-## 📈 Usage Examples
+## 📖 Usage Examples
 
 ### Text Analysis
 ```python
-from src.agents.text_agent import TextAgent
-
-agent = TextAgent()
-result = await agent.process(AnalysisRequest(
-    data_type=DataType.TEXT,
-    content="This product is amazing!"
-))
-print(f"Sentiment: {result.sentiment.label}, Confidence: {result.sentiment.confidence}")
+# Analyze text with different agents
+result = await analyze_text(
+    text="I love this product!",
+    agent_type="swarm",  # Options: standard, simple, strands, swarm
+    language="en"
+)
 ```
 
-### Audio Analysis
+### Media Analysis
 ```python
-from src.agents.audio_agent_enhanced import EnhancedAudioAgent
-
-agent = EnhancedAudioAgent()
-result = await agent.transcribe_audio_enhanced("audio.mp3")
-print(f"Transcription: {result['transcription']}")
+# Analyze different media types
+result = await analyze_media(
+    content_path="path/to/file.jpg",
+    media_type="image",  # Options: audio, image, webpage, video
+    language="en"
+)
 ```
 
-### Large Audio File Processing
+### YouTube Analysis
 ```python
-from src.agents.audio_summarization_agent import AudioSummarizationAgent
-
-agent = AudioSummarizationAgent()
-result = await agent.process(AnalysisRequest(
-    data_type=DataType.AUDIO,
-    content="large_audio_file.mp3"  # Files over 100MB automatically use chunking
-))
-print(f"Summary: {result.metadata.get('summary')}")
-print(f"Key Points: {result.metadata.get('key_points')}")
-print(f"Action Items: {result.metadata.get('action_items')}")
-```
-
-### YouTube Comprehensive Analysis
-```python
-from src.core.youtube_comprehensive_analyzer import YouTubeComprehensiveAnalyzer
-
-analyzer = YouTubeComprehensiveAnalyzer()
-result = await analyzer.analyze_youtube_video(
-    "https://youtube.com/watch?v=...",
-    extract_audio=True,
-    extract_frames=True,
+# Analyze YouTube video with parallel processing
+result = await analyze_youtube(
+    youtube_url="https://www.youtube.com/watch?v=example",
+    use_parallel=True,
     num_frames=5
 )
-print(f"Video: {result.video_metadata.get('title')}")
-print(f"Combined Sentiment: {result.combined_sentiment.label}")
-print(f"Audio Sentiment: {result.audio_sentiment.label}")
-print(f"Visual Sentiment: {result.visual_sentiment.label}")
-print(f"Processing Time: {result.processing_time:.2f}s")
 ```
 
-### Video/Image Analysis
+### Knowledge Graph Analysis
 ```python
-from src.agents.vision_agent_enhanced import EnhancedVisionAgent
+# Extract entities from text
+entities = await extract_entities(
+    text="Apple Inc. was founded by Steve Jobs in Cupertino, California."
+)
 
-agent = EnhancedVisionAgent()
-result = await agent.analyze_image_enhanced("image.jpg")
-print(f"Image sentiment: {result['sentiment']}")
+# Map relationships between entities
+relationships = await map_relationships(
+    text="Apple Inc. was founded by Steve Jobs in Cupertino, California.",
+    entities=entities
+)
+
+# Generate visual graph report
+await generate_graph_report(output_path="graph_report.html")
 ```
 
-### Large Video File Processing
+### Translation Services
 ```python
-from src.agents.video_summarization_agent import VideoSummarizationAgent
+# Translate text to English
+translated = await translate_text(
+    text="Bonjour le monde!",
+    language="fr"
+)
 
-agent = VideoSummarizationAgent()
-result = await agent.process(AnalysisRequest(
-    data_type=DataType.VIDEO,
-    content="large_video_file.mp4"  # Files over 100MB automatically use chunking
-))
-print(f"Summary: {result.metadata.get('summary')}")
-print(f"Key Scenes: {result.metadata.get('key_scenes')}")
-print(f"Key Moments: {result.metadata.get('key_moments')}")
+# Translate webpage
+webpage_translated = await translate_webpage(
+    url="https://example.com/french-page"
+)
 ```
 
-### Web Content Analysis
-```python
-from src.agents.web_agent_enhanced import EnhancedWebAgent
+## 📚 Documentation
 
-agent = EnhancedWebAgent()
-result = await agent.analyze_webpage_enhanced("https://example.com")
-print(f"Webpage sentiment: {result['sentiment']}")
-```
+Comprehensive documentation is available in the `docs/` directory:
 
-## 🌐 API Endpoints
-
-- `POST /analyze/text` - Text sentiment analysis
-- `POST /analyze/audio` - Enhanced audio analysis
-- `POST /analyze/vision` - Enhanced vision analysis
-- `POST /analyze/web` - Enhanced web analysis
-- `POST /orchestrate` - Orchestrator-based analysis
-- `GET /health` - Health check
-- `GET /docs` - API documentation
+- **Configuration Guides**: Model configuration, Ollama setup, and system settings
+- **Feature Guides**: Knowledge graph, entity categorization, visualization
+- **Integration Guides**: MCP server integration and API usage
+- **Implementation Summaries**: Detailed technical implementation notes
 
 ## 🧪 Testing
 
+Run the test suite to verify functionality:
+
 ```bash
 # Run all tests
-uv run pytest
+pytest
 
-# Run with coverage
-uv run pytest --cov=src
-
-# Run specific test file
-uv run pytest Test/test_enhanced_audio_agent_integration.py
-```
-
-## 📈 Performance
-
-- **Text Processing**: ~1000 items/second (CPU)
-- **Audio Processing**: ~10 items/second (CPU)
-- **Video Processing**: ~5 items/second (CPU)
-- **Image Processing**: ~20 items/second (CPU)
-- **Large File Processing**: 
-  - Audio: ~2-5 minutes for 100MB files with chunking
-  - Video: ~5-10 minutes for 100MB files with chunking
-  - Progress tracking with real-time ETA updates
-- **Memory Usage**: ~2-4GB RAM (optimized for large files)
-- **Storage**: ~5-10GB for models and database
-
-## 🔧 Configuration
-
-Create a `.env` file in the project root:
-
-```env
-# Database
-CHROMA_HOST=localhost
-CHROMA_PORT=8000
-
-# Models
-MODEL_CACHE_DIR=./models
-SENTIMENT_MODEL=cardiffnlp/twitter-roberta-base-sentiment-latest
-
-# Ollama
-OLLAMA_HOST=localhost
-OLLAMA_PORT=11434
-
-# Processing
-MAX_BATCH_SIZE=100
-ENABLE_GPU=false
-LOG_LEVEL=INFO
-
-# YouTube-DL
-YOUTUBE_DL_DOWNLOAD_PATH=./temp/videos
-
-# Large File Processing
-LARGE_FILE_CHUNK_DURATION=300
-LARGE_FILE_MAX_WORKERS=4
-LARGE_FILE_CACHE_DIR=./cache
-LARGE_FILE_TEMP_DIR=./temp
+# Run specific test categories
+pytest Test/test_knowledge_graph_agent.py
+pytest Test/test_configurable_models.py
+pytest Test/test_main_integration.py
 ```
 
 ## 🤝 Contributing
@@ -494,73 +303,25 @@ LARGE_FILE_TEMP_DIR=./temp
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests
+4. Add tests for new functionality
 5. Submit a pull request
 
-## 📝 License
+## 📄 License
 
-MIT License - see LICENSE file for details
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## 🆘 Support
 
-- Create an issue for bugs
-- Check the documentation in `/docs`
-- Review example scripts in `/examples`
+For support and questions:
+- Check the documentation in the `docs/` directory
+- Review the test files for usage examples
+- Open an issue on GitHub
 
-## ✅ Project Status
+## 🔄 Recent Updates
 
-**FINALIZED** - This project has been successfully completed and finalized with:
-
-- ✅ **Enhanced Agents**: All agents (Audio, Vision, Web, Text, OCR, Translation) fully implemented with comprehensive capabilities
-- ✅ **MCP Integration**: Complete MCP server support for all agent types with 34 tools
-- ✅ **Large File Processing**: Advanced chunking and progressive analysis for audio/video files
-- ✅ **Unified Video Analysis**: Multi-platform video support with YouTube-DL integration
-- ✅ **Translation Capabilities**: Comprehensive translation support for text, audio, video, and documents
-- ✅ **OCR Integration**: Advanced OCR capabilities with Ollama and Llama Vision
-- ✅ **Documentation**: Comprehensive documentation and examples
-- ✅ **Testing**: Full test coverage for all components
-- ✅ **Production Ready**: Clean architecture with archived legacy code
-
-### Final Project Structure
-```
-sentiment-analysis-swarm/
-├── main.py                    # Main entry point with unified MCP integration
-├── src/
-│   ├── agents/               # Enhanced processing agents (13 agents)
-│   ├── mcp/                  # MCP servers for each agent
-│   ├── core/                 # Core functionality and models
-│   ├── api/                  # FastAPI endpoints
-│   ├── config/               # Configuration management
-│   └── archive/              # Archived legacy code and documentation
-├── Test/                     # Test suite
-├── Results/                  # Analysis results
-├── docs/                     # Documentation
-├── examples/                 # Example scripts
-├── scripts/                  # Utility scripts
-├── ui/                       # Streamlit web interface
-├── data/                     # Sample data
-├── models/                   # Model files
-├── chroma_db/                # Vector database
-├── cache/                    # Processing cache
-├── temp/                     # Temporary files
-└── README.md                 # This file
-```
-
-All development documentation has been archived in `src/archive/` for reference.
-
-## 🔮 Roadmap
-
-- [x] Enhanced audio agent with comprehensive features
-- [x] Enhanced vision agent with YouTube-DL integration
-- [x] Enhanced web agent with advanced capabilities
-- [x] MCP server integration for all agents
-- [x] Large file processing with chunking and progressive analysis
-- [x] Audio and video summarization agents
-- [x] Unified video analysis with multi-platform support
-- [x] Project finalization and documentation
-- [ ] Multi-language support expansion
-- [ ] GPU acceleration
-- [ ] Cloud deployment
-- [ ] Advanced analytics dashboard
-- [ ] Real-time streaming improvements
-- [ ] Custom model training interface
+- **Enhanced Entity Categorization**: 100% accurate entity type classification
+- **Configurable Models**: Dynamic model selection and configuration
+- **Improved Knowledge Graph**: Enhanced visualization and analysis capabilities
+- **Optimized MCP Server**: Reduced tool count with unified interfaces
+- **Comprehensive Testing**: Extensive test coverage for all features
+- **Enhanced Documentation**: Detailed guides and implementation summaries

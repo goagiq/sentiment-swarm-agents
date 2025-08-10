@@ -13,6 +13,7 @@ from src.agents.text_agent_swarm import TextAgentSwarm
 from src.agents.vision_agent_enhanced import EnhancedVisionAgent
 from src.agents.audio_agent_enhanced import EnhancedAudioAgent
 from src.agents.web_agent_enhanced import EnhancedWebAgent
+from src.agents.knowledge_graph_agent import KnowledgeGraphAgent
 from src.core.models import (
     AnalysisRequest, AnalysisResult, DataType, SentimentResult,
     ModelConfig, ReflectionResult
@@ -51,7 +52,14 @@ class SentimentOrchestrator:
         web_agent = EnhancedWebAgent()
         self._register_agent(web_agent, [DataType.WEBPAGE])
         
-        logger.info(f"Registered {len(self.agents)} agents")
+        # Knowledge Graph agent (GraphRAG-inspired)
+        knowledge_graph_agent = KnowledgeGraphAgent()
+        self._register_agent(knowledge_graph_agent, [
+            DataType.TEXT, DataType.AUDIO, DataType.VIDEO, 
+            DataType.WEBPAGE, DataType.PDF, DataType.SOCIAL_MEDIA
+        ])
+        
+        logger.info(f"Registered {len(self.agents)} agents including GraphRAG-inspired Knowledge Graph Agent")
     
     def _register_agent(self, agent: BaseAgent, supported_types: List[DataType]):
         """Register an agent with its supported data types."""

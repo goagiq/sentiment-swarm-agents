@@ -28,7 +28,7 @@ class StrandsBaseAgent(ABC):
         self, 
         agent_id: Optional[str] = None, 
         max_capacity: int = 10, 
-        model_name: str = "ollama:llama3.2:latest"
+        model_name: str = "llama3.2:latest"
     ):
         self.agent_id = (
             agent_id or f"{self.__class__.__name__}_{uuid4().hex[:8]}"
