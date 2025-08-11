@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from loguru import logger
 from src.agents.audio_summarization_agent import AudioSummarizationAgent
-from src.agents.video_summarization_agent import VideoSummarizationAgent
+from src.agents.unified_vision_agent import UnifiedVisionAgent
 from src.core.models import AnalysisRequest, DataType
 
 async def test_large_file_integration():
@@ -41,7 +41,7 @@ async def test_large_file_integration():
         
         # Test Video Summarization Agent
         print(f"\n🔍 Testing Video Summarization Agent...")
-        video_agent = VideoSummarizationAgent()
+        video_agent = UnifiedVisionAgent()
         
         # Check capabilities
         capabilities = video_agent.metadata.get('capabilities', [])

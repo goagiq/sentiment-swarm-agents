@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent / "src"))
 
 from loguru import logger
-from src.agents.video_summarization_agent import VideoSummarizationAgent
+from src.agents.unified_vision_agent import UnifiedVisionAgent
 from src.core.models import AnalysisRequest, DataType
 
 
@@ -30,7 +30,7 @@ async def analyze_innovation_workshop():
     
     try:
         # Initialize the video summarization agent
-        agent = VideoSummarizationAgent()
+        agent = UnifiedVisionAgent()
         
         # Create analysis request
         request = AnalysisRequest(
@@ -39,7 +39,7 @@ async def analyze_innovation_workshop():
             language="en"
         )
         
-        logger.info("Processing video with VideoSummarizationAgent...")
+        logger.info("Processing video with UnifiedVisionAgent...")
         
         # Process the video
         result = await agent.process(request)

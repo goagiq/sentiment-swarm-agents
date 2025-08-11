@@ -91,13 +91,21 @@ class WebpageRequest(BaseModel):
     confidence_threshold: float = 0.8
 
 
+class PDFRequest(BaseModel):
+    pdf_path: str
+    model_preference: Optional[str] = None
+    reflection_enabled: bool = True
+    max_iterations: int = 3
+    confidence_threshold: float = 0.8
+
+
 # Response models
 class HealthResponse(BaseModel):
     status: str
     agents: dict
-    models: List[ModelConfig]
+    models: List[dict]
     
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
 
 
 # Health check endpoint
@@ -108,10 +116,23 @@ async def health_check():
         agent_status = await orchestrator.get_agent_status()
         available_models = await orchestrator.get_available_models()
         
+        # Convert ModelConfig objects to dictionaries for easier serialization
+        models_dict = []
+        for model in available_models:
+            models_dict.append({
+                "model_id": model.model_id,
+                "model_type": model.model_type.value,
+                "capabilities": [cap.value for cap in model.capabilities],
+                "host": model.host,
+                "is_default": model.is_default,
+                "temperature": model.temperature,
+                "max_tokens": model.max_tokens
+            })
+        
         return HealthResponse(
             status="healthy",
             agents=agent_status,
-            models=available_models
+            models=models_dict
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
@@ -203,6 +224,23 @@ async def analyze_webpage(request: WebpageRequest):
         raise HTTPException(status_code=500, detail=f"Webpage analysis failed: {str(e)}")
 
 
+# PDF analysis endpoint
+@app.post("/analyze/pdf", response_model=AnalysisResult)
+async def analyze_pdf(request: PDFRequest):
+    """Analyze PDF content and extract text."""
+    try:
+        result = await orchestrator.analyze_pdf(
+            pdf_path=request.pdf_path,
+            model_preference=request.model_preference,
+            reflection_enabled=request.reflection_enabled,
+            max_iterations=request.max_iterations,
+            confidence_threshold=request.confidence_threshold
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PDF analysis failed: {str(e)}")
+
+
 # Generic analysis endpoint
 @app.post("/analyze", response_model=AnalysisResult)
 async def analyze_generic(request: AnalysisRequest):
@@ -263,6 +301,7 @@ async def root():
             "video_analysis": "/analyze/video",
             "audio_analysis": "/analyze/audio",
             "webpage_analysis": "/analyze/webpage",
+            "pdf_analysis": "/analyze/pdf",
             "models": "/models",
             "agent_status": "/agents/status"
         }

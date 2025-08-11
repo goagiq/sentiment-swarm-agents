@@ -6,7 +6,6 @@ and processing video content for sentiment analysis.
 
 import asyncio
 import os
-import tempfile
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
@@ -66,11 +65,11 @@ class NetworkError(YouTubeDLError):
 
 class YouTubeDLService:
     """Service for YouTube-DL operations."""
-    
+
     def __init__(self, download_path: str = "./temp/videos"):
         self.download_path = Path(download_path)
         self.download_path.mkdir(parents=True, exist_ok=True)
-        
+
         # Enhanced yt-dlp options based on official documentation
         self.ydl_opts = {
             'outtmpl': str(self.download_path / '%(title)s.%(ext)s'),
@@ -79,7 +78,10 @@ class YouTubeDLService:
             'extract_flat': False,
             # Modern headers to avoid 403 errors
             'http_headers': {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'User-Agent': (
+                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                    '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                ),
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
                 'Accept-Language': 'en-US,en;q=0.9',
                 'Accept-Encoding': 'gzip, deflate, br',
@@ -109,7 +111,7 @@ class YouTubeDLService:
             'geo_bypass': True,
             'geo_bypass_country': 'US',
         }
-    
+
     def _get_audio_options(self) -> Dict[str, Any]:
         """Get options optimized for audio extraction."""
         return {
@@ -129,7 +131,7 @@ class YouTubeDLService:
             'audioformat': 'mp3',
             'audioquality': '192K',
         }
-    
+
     def _get_video_options(self) -> Dict[str, Any]:
         """Get options optimized for video download."""
         return {
@@ -143,7 +145,7 @@ class YouTubeDLService:
             'merge_output_format': 'mp4',
             'prefer_ffmpeg': True,
         }
-    
+
     async def get_metadata(self, url: str) -> VideoMetadata:
         """Get video metadata without downloading."""
         try:
@@ -152,20 +154,23 @@ class YouTubeDLService:
                 'quiet': True,
                 'no_warnings': True,
                 'http_headers': {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'User-Agent': (
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                        '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                    ),
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                     'Accept-Language': 'en-us,en;q=0.5',
                 },
                 'retries': 3,
                 'ignoreerrors': True,
             }
-            
+
             with yt_dlp.YoutubeDL(enhanced_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
-                
+
                 if not info:
                     raise VideoUnavailableError("No metadata available")
-                
+
                 return VideoMetadata(
                     title=info.get('title', 'Unknown'),
                     description=info.get('description', ''),
@@ -184,23 +189,23 @@ class YouTubeDLService:
                 raise VideoUnavailableError(f"Video not found (404): {e}")
             else:
                 raise VideoUnavailableError(f"Could not get metadata: {e}")
-    
+
     async def download_video(self, url: str) -> VideoInfo:
         """Download video and return metadata."""
         try:
             with yt_dlp.YoutubeDL(self._get_video_options()) as ydl:
                 info = ydl.extract_info(url, download=True)
-                
+
                 if not info:
                     raise VideoUnavailableError("No video information available")
-                
+
                 # Find the downloaded file
                 video_path = None
                 for file in self.download_path.iterdir():
                     if file.is_file() and file.suffix in ['.mp4', '.webm', '.mkv']:
                         video_path = str(file)
                         break
-                
+
                 return VideoInfo(
                     title=info.get('title', 'Unknown'),
                     duration=info.get('duration', 0),
@@ -216,27 +221,29 @@ class YouTubeDLService:
                 raise VideoUnavailableError(f"Video not found (404): {e}")
             else:
                 raise VideoUnavailableError(f"Could not download video: {e}")
-    
+
     async def extract_audio(self, url: str) -> AudioInfo:
         """Extract audio from video URL."""
         try:
             with yt_dlp.YoutubeDL(self._get_audio_options()) as ydl:
                 info = ydl.extract_info(url, download=True)
-                
+
                 # Check if info is None
                 if not info:
-                    raise VideoUnavailableError("No video information available for audio extraction")
-                
+                    raise VideoUnavailableError(
+                        "No video information available for audio extraction"
+                    )
+
                 # Find the extracted audio file
                 audio_path = None
                 for file in self.download_path.iterdir():
                     if file.is_file() and file.suffix in ['.mp3', '.m4a', '.wav']:
                         audio_path = str(file)
                         break
-                
+
                 if not audio_path:
                     raise VideoUnavailableError("No audio file found after extraction")
-                
+
                 return AudioInfo(
                     audio_path=audio_path,
                     format=Path(audio_path).suffix if audio_path else 'mp3',
@@ -252,43 +259,43 @@ class YouTubeDLService:
                 raise VideoUnavailableError(f"Video not found (404) for audio extraction: {e}")
             else:
                 raise VideoUnavailableError(f"Could not extract audio: {e}")
-    
+
     async def extract_frames(self, video_path: str, num_frames: int = 10) -> List[str]:
         """Extract key frames from video."""
         try:
             import cv2
-            
+
             frames = []
             cap = cv2.VideoCapture(video_path)
-            
+
             if not cap.isOpened():
                 raise ValueError("Could not open video file")
-            
+
             total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
             frame_interval = max(1, total_frames // num_frames)
-            
+
             for i in range(0, total_frames, frame_interval):
                 cap.set(cv2.CAP_PROP_POS_FRAMES, i)
                 ret, frame = cap.read()
-                
+
                 if ret:
                     frame_path = str(self.download_path / f"frame_{i:04d}.jpg")
                     cv2.imwrite(frame_path, frame)
                     frames.append(frame_path)
-                
+
                 if len(frames) >= num_frames:
                     break
-            
+
             cap.release()
             return frames
-            
+
         except ImportError:
             logger.warning("OpenCV not available, skipping frame extraction")
             return []
         except Exception as e:
             logger.error(f"Failed to extract frames from {video_path}: {e}")
             return []
-    
+
     async def cleanup_files(self, file_paths: List[str]):
         """Clean up downloaded files."""
         for file_path in file_paths:
@@ -298,7 +305,7 @@ class YouTubeDLService:
                     logger.debug(f"Cleaned up: {file_path}")
             except Exception as e:
                 logger.warning(f"Failed to cleanup {file_path}: {e}")
-    
+
     def is_supported_platform(self, url: str) -> bool:
         """Check if the URL is from a supported platform."""
         supported_domains = [
@@ -309,20 +316,20 @@ class YouTubeDLService:
             'facebook.com',
             'twitter.com'
         ]
-        
+
         url_lower = url.lower()
         return any(domain in url_lower for domain in supported_domains)
-    
+
     def is_youtube_search_url(self, url: str) -> bool:
         """Check if the URL is a YouTube search results page."""
         return 'youtube.com/results' in url or 'youtube.com/search' in url
-    
+
     async def search_youtube_videos(self, query: str, max_results: int = 5) -> List[Dict[str, Any]]:
         """Search for YouTube videos using a query string."""
         try:
             # Create a proper YouTube search URL
             search_url = f"https://www.youtube.com/results?search_query={query.replace(' ', '+')}"
-            
+
             # Use yt-dlp to search for videos
             search_opts = {
                 **self.ydl_opts,
@@ -331,15 +338,15 @@ class YouTubeDLService:
                 'no_warnings': True,
                 'playlist_items': f'1-{max_results}',
             }
-            
+
             with yt_dlp.YoutubeDL(search_opts) as ydl:
                 # Extract search results
                 search_results = ydl.extract_info(search_url, download=False)
-                
+
                 if not search_results or 'entries' not in search_results:
                     logger.warning(f"No search results found for query: {query}")
                     return []
-                
+
                 videos = []
                 for entry in search_results['entries']:
                     if entry:
@@ -350,13 +357,13 @@ class YouTubeDLService:
                             'uploader': entry.get('uploader', 'Unknown'),
                             'view_count': entry.get('view_count', 0),
                         })
-                
+
                 return videos[:max_results]
-                
+
         except Exception as e:
             logger.error(f"Failed to search YouTube for '{query}': {e}")
             return []
-    
+
     async def get_available_formats(self, url: str) -> List[Dict[str, Any]]:
         """Get available formats for a video."""
         try:
@@ -366,28 +373,28 @@ class YouTubeDLService:
         except Exception as e:
             logger.error(f"Failed to get formats for {url}: {e}")
             return []
-    
+
     async def download_with_progress(self, url: str, progress_callback=None) -> VideoInfo:
         """Download video with progress tracking."""
         def progress_hook(d):
             if progress_callback and d['status'] == 'downloading':
                 progress_callback(d.get('downloaded_bytes', 0), d.get('total_bytes', 0))
-        
+
         options = {
             **self._get_video_options(),
             'progress_hooks': [progress_hook] if progress_callback else []
         }
-        
+
         try:
             with yt_dlp.YoutubeDL(options) as ydl:
                 info = ydl.extract_info(url, download=True)
-                
+
                 video_path = None
                 for file in self.download_path.iterdir():
                     if file.is_file() and file.suffix in ['.mp4', '.webm', '.mkv']:
                         video_path = str(file)
                         break
-                
+
                 return VideoInfo(
                     title=info.get('title', 'Unknown'),
                     duration=info.get('duration', 0),
@@ -404,10 +411,10 @@ class YouTubeDLService:
 async def main():
     """Example usage of YouTubeDLService."""
     service = YouTubeDLService()
-    
+
     # Test URL
     test_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-    
+
     try:
         # Get metadata
         print("Getting metadata...")
@@ -415,17 +422,17 @@ async def main():
         print(f"Title: {metadata.title}")
         print(f"Duration: {metadata.duration} seconds")
         print(f"Platform: {metadata.platform}")
-        
+
         # Extract audio
         print("\nExtracting audio...")
         audio_info = await service.extract_audio(test_url)
         print(f"Audio extracted: {audio_info.audio_path}")
         print(f"Format: {audio_info.format}")
         print(f"Duration: {audio_info.duration} seconds")
-        
+
         # Cleanup
         await service.cleanup_files([audio_info.audio_path])
-        
+
     except Exception as e:
         print(f"Error: {e}")
 

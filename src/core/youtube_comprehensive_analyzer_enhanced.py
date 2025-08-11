@@ -17,8 +17,8 @@ from functools import partial
 from loguru import logger
 
 from src.core.youtube_dl_service import YouTubeDLService, VideoInfo, AudioInfo
-from src.agents.audio_agent_enhanced import EnhancedAudioAgent
-from src.agents.vision_agent_enhanced import EnhancedVisionAgent
+from src.agents.unified_audio_agent import UnifiedAudioAgent
+from src.agents.unified_vision_agent import UnifiedVisionAgent
 from src.agents.web_agent_enhanced import EnhancedWebAgent
 from src.core.models import AnalysisRequest, AnalysisResult, DataType, SentimentResult
 
@@ -51,8 +51,8 @@ class EnhancedYouTubeComprehensiveAnalyzer:
         
         # Initialize services
         self.youtube_dl_service = YouTubeDLService(str(self.download_path))
-        self.audio_agent = EnhancedAudioAgent()
-        self.vision_agent = EnhancedVisionAgent()
+        self.audio_agent = UnifiedAudioAgent()
+        self.vision_agent = UnifiedVisionAgent()
         self.web_agent = EnhancedWebAgent()
         
         # Analysis settings
@@ -415,34 +415,6 @@ class EnhancedYouTubeComprehensiveAnalyzer:
         except Exception as e:
             logger.error(f"Search and analysis failed for query '{query}': {e}")
             return []
-        """Analyze multiple YouTube URLs in batch."""
-        results = []
-        
-        for url in urls:
-            try:
-                result = await self.analyze_youtube_video(
-                    url, extract_audio, extract_frames, num_frames
-                )
-                results.append(result)
-            except Exception as e:
-                logger.error(f"Failed to analyze {url}: {e}")
-                # Add error result
-                results.append(YouTubeAnalysisResult(
-                    video_url=url,
-                    video_metadata={"error": str(e)},
-                    audio_sentiment=SentimentResult(label="neutral", confidence=0.0),
-                    visual_sentiment=SentimentResult(label="neutral", confidence=0.0),
-                    combined_sentiment=SentimentResult(label="neutral", confidence=0.0),
-                    audio_analysis={"error": str(e)},
-                    visual_analysis={"error": str(e)},
-                    processing_time=0.0,
-                    extracted_frames=[],
-                    audio_path=None,
-                    video_path=None,
-                    analysis_timestamp=datetime.now()
-                ))
-        
-        return results
 
 
     async def _analyze_parallel(

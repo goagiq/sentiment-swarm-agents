@@ -49,7 +49,7 @@ def test_repetitive_loop_prevention():
     print()
 
 
-def test_circuit_breaker():
+async def test_circuit_breaker():
     """Test circuit breaker functionality."""
     print("🧪 Testing Circuit Breaker")
     print("=" * 50)
@@ -157,7 +157,7 @@ async def test_async_error_handling():
     print()
 
 
-def test_retry_configuration():
+async def test_retry_configuration():
     """Test custom retry configuration."""
     print("🧪 Testing Retry Configuration")
     print("=" * 50)

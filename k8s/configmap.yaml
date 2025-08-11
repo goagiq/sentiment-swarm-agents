@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sentiment-config
+  namespace: sentiment-analysis
+data:
+  TEXT_MODEL: "ollama:mistral-small3.1:latest"
+  VISION_MODEL: "ollama:llava:latest"
+  FALLBACK_TEXT_MODEL: "ollama:llama3.2:latest"
+  FALLBACK_VISION_MODEL: "ollama:granite3.2-vision"
+  OLLAMA_HOST: "http://ollama-service:11434"
+  OLLAMA_TIMEOUT: "30"
+  TEXT_TEMPERATURE: "0.1"
+  TEXT_MAX_TOKENS: "200"
+  VISION_TEMPERATURE: "0.7"
+  VISION_MAX_TOKENS: "200"
+  ENABLE_TOOL_CALLING: "true"
+  MAX_TOOL_CALLS: "5"
+  LOG_LEVEL: "INFO"
+  ENABLE_METRICS: "true"
+  MAX_WORKERS: "4"
+  CHUNK_SIZE: "1200"
+  OVERLAP_SIZE: "100"
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"

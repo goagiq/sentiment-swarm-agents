@@ -73,6 +73,18 @@ class ModelConfig(BaseModel):
     is_default: bool = False
 
 
+class PageData(BaseModel):
+    """Structured data for a single page."""
+    page_number: int
+    content: str
+    content_length: int
+    extraction_method: str  # "pypdf2", "vision_ocr", etc.
+    confidence: float = Field(ge=0.0, le=1.0)
+    processing_time: Optional[float] = None
+    error_message: Optional[str] = None
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
 class AnalysisRequest(BaseModel):
     """Request for sentiment analysis."""
     id: str = Field(default_factory=lambda: str(uuid4()))
@@ -98,7 +110,7 @@ class SentimentResult(BaseModel):
 
 
 class AnalysisResult(BaseModel):
-    """Complete analysis result."""
+    """Result of analysis."""
     id: str = Field(default_factory=lambda: str(uuid4()))
     request_id: str
     data_type: DataType
@@ -107,6 +119,7 @@ class AnalysisResult(BaseModel):
     status: Optional[str] = None
     raw_content: Optional[str] = None
     extracted_text: Optional[str] = None
+    pages: Optional[List[PageData]] = None  # Structured page data for PDFs
     metadata: Dict[str, Any] = Field(default_factory=dict)
     model_used: Optional[str] = None
     reflection_enabled: bool = True

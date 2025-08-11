@@ -48,23 +48,21 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 # flake8: noqa: E402
 from api.main import app
 from core.error_handler import with_error_handling
-from agents.text_agent import TextAgent
-from agents.text_agent_simple import SimpleTextAgent
-from agents.text_agent_strands import TextAgentStrands
-from agents.text_agent_swarm import TextAgentSwarm
-from agents.audio_agent_enhanced import EnhancedAudioAgent
-from agents.vision_agent_enhanced import EnhancedVisionAgent
+from agents.unified_text_agent import UnifiedTextAgent
+from agents.unified_audio_agent import UnifiedAudioAgent
+from agents.unified_vision_agent import UnifiedVisionAgent
 from agents.web_agent_enhanced import EnhancedWebAgent
-from agents.audio_summarization_agent import AudioSummarizationAgent
-from agents.video_summarization_agent import VideoSummarizationAgent
+from agents.unified_vision_agent import UnifiedVisionAgent
 from agents.ocr_agent import OCRAgent
-from agents.orchestrator_agent import OrchestratorAgent, unified_video_analysis
-from agents.translation_agent import TranslationAgent
+from agents.orchestrator_agent import OrchestratorAgent
+from core.tool_registry import ToolRegistry
 from agents.knowledge_graph_agent import KnowledgeGraphAgent
 from core.improved_knowledge_graph_utility import ImprovedKnowledgeGraphUtility
 from core.knowledge_graph_integration import KnowledgeGraphIntegration
 from config.settings import settings
-from core.youtube_comprehensive_analyzer import YouTubeComprehensiveAnalyzer
+from config.config import config
+from core.port_checker import get_safe_port
+# YouTube analysis now handled by UnifiedVisionAgent
 from core.models import (
     AnalysisRequest, 
     DataType,
@@ -103,29 +101,24 @@ class OptimizedMCPServer:
         """Initialize all 7 agents."""
         try:
             # Initialize each agent type
-            self.agents["text"] = TextAgent()
-            self.agents["text_simple"] = SimpleTextAgent()
-            self.agents["text_strands"] = TextAgentStrands()
-            self.agents["text_swarm"] = TextAgentSwarm()
-            self.agents["audio"] = EnhancedAudioAgent()
-            self.agents["vision"] = EnhancedVisionAgent()
+            self.agents["text"] = UnifiedTextAgent()
+            self.agents["audio"] = UnifiedAudioAgent()
+            self.agents["vision"] = UnifiedVisionAgent()
             self.agents["web"] = EnhancedWebAgent()
-            self.agents["audio_summary"] = AudioSummarizationAgent()
-            self.agents["video_summary"] = VideoSummarizationAgent()
+            self.agents["video_summary"] = UnifiedVisionAgent()
             self.agents["ocr"] = OCRAgent()
             self.agents["orchestrator"] = OrchestratorAgent()
-            self.agents["translation"] = TranslationAgent()
             # Initialize KnowledgeGraphAgent with settings-based configuration
             self.agents["knowledge_graph"] = KnowledgeGraphAgent(
                 graph_storage_path=str(settings.paths.knowledge_graphs_dir)
             )
-            self.agents["youtube"] = YouTubeComprehensiveAnalyzer()
+            # YouTube analysis now handled by UnifiedVisionAgent
             
             # Initialize improved knowledge graph utilities
             self.improved_knowledge_graph_utility = ImprovedKnowledgeGraphUtility()
             self.knowledge_graph_integration = KnowledgeGraphIntegration()
             
-            print(f"✅ Initialized {len(self.agents)} agents including knowledge graph and improved utilities")
+            print(f"✅ Initialized {len(self.agents)} unified agents including knowledge graph and improved utilities")
             
         except Exception as e:
             print(f"⚠️  Error initializing agents: {e}")
@@ -504,8 +497,9 @@ class OptimizedMCPServer:
             async def analyze_video_unified(video_input: str, language: str = "en"):
                 """Analyze video content using unified approach that detects platform type."""
                 try:
-                    # Use the orchestrator's unified video analysis tool
-                    result = await unified_video_analysis(video_input)
+                    # Use the tool registry's unified video analysis tool
+                    tool_registry = ToolRegistry()
+                    result = await tool_registry.execute_tool("unified_video_analysis", {"video_input": video_input})
                     return result
                 except Exception as e:
                     return {
@@ -529,7 +523,7 @@ class OptimizedMCPServer:
                     print(f"🎬 Starting video analysis: {video_path}")
                     
                     # Create video summarization agent directly for better control
-                    video_agent = VideoSummarizationAgent()
+                    video_agent = UnifiedVisionAgent()
                     
                     # Determine data type based on content
                     data_type = DataType.VIDEO
@@ -1390,18 +1384,22 @@ if __name__ == "__main__":
             for tool in tools:
                 print(f"   - {tool}")
     
+    # Get API configuration and ensure port is available
+    api_host = config.api.host
+    api_port = get_safe_port(api_host, config.api.port)
+    
     print("\n🌐 Starting FastAPI server...")
-    print("   - API Endpoints: http://0.0.0.0:8001")
-    print("   - Health Check: http://0.0.0.0:8001/health")
-    print("   - API Docs: http://0.0.0.0:8001/docs")
+    print(f"   - API Endpoints: http://{api_host}:{api_port}")
+    print(f"   - Health Check: http://{api_host}:{api_port}/health")
+    print(f"   - API Docs: http://{api_host}:{api_port}/docs")
     if mcp_server:
         print("   - MCP Server: http://localhost:8000/mcp")
     
     # Start the FastAPI server
     uvicorn.run(
         app,
-        host="0.0.0.0",
-        port=8001,
+        host=api_host,
+        port=api_port,
         reload=False,
         log_level="info"
     )

@@ -1,0 +1,151 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+docs/
+*.md
+
+# Development files
+.env
+.env.local
+.env.development
+.env.test
+*.log
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+*.temp
+
+# Cache
+cache/
+.cache/
+*.cache
+
+# Data files (will be mounted as volumes)
+data/
+Results/
+
+# Test files
+Test/
+tests/
+test_*.py
+*_test.py
+
+# Examples
+examples/
+
+# Scripts (keep only production scripts)
+scripts/
+!scripts/backup.sh
+!scripts/restore.sh
+!scripts/health_check.sh
+
+# Monitoring (will be mounted)
+monitoring/
+
+# SSL certificates (will be mounted)
+ssl/
+*.pem
+*.key
+*.crt
+
+# Backup files
+backup/
+*.tar.gz
+*.zip
+
+# Large model files
+models/
+*.bin
+*.safetensors
+*.gguf
+
+# Node modules (if any)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Kubernetes
+k8s/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+
+# Local development
+local/
+dev/
+development/

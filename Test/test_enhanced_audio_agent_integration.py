@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from loguru import logger
 from agents.orchestrator_agent import OrchestratorAgent
-from agents.audio_agent_enhanced import EnhancedAudioAgent
+from agents.unified_audio_agent import UnifiedAudioAgent
 from core.models import AnalysisRequest, DataType
 
 
@@ -23,7 +23,7 @@ async def test_enhanced_audio_agent():
     
     try:
         # Create enhanced audio agent
-        audio_agent = EnhancedAudioAgent()
+        audio_agent = UnifiedAudioAgent()
         
         # Test audio analysis with a sample audio path
         test_audio_path = "test_audio.mp3"  # This would be a real audio file in practice
@@ -98,7 +98,7 @@ async def test_enhanced_audio_tools():
     
     try:
         # Create enhanced audio agent
-        audio_agent = EnhancedAudioAgent()
+        audio_agent = UnifiedAudioAgent()
         
         # Test audio path
         test_audio_path = "test_audio.mp3"

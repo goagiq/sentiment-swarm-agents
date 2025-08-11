@@ -1,0 +1,34 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sentiment-analysis-ingress
+  namespace: sentiment-analysis
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+spec:
+  tls:
+  - hosts:
+    - sentiment.your-domain.com
+    secretName: sentiment-tls
+  rules:
+  - host: sentiment.your-domain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: sentiment-analysis-service
+            port:
+              number: 8002
+      - path: /mcp
+        pathType: Prefix
+        backend:
+          service:
+            name: sentiment-analysis-service
+            port:
+              number: 8000

@@ -239,8 +239,6 @@ def initialize_ollama_config_from_central():
 
 def update_ollama_config(**kwargs) -> None:
     """Update the global Ollama configuration."""
-    global ollama_config
-    
     for key, value in kwargs.items():
         if hasattr(ollama_config, key):
             setattr(ollama_config, key, value)

@@ -13,7 +13,7 @@ sys.path.append(str(Path(__file__).parent.parent / "src"))
 
 try:
     from loguru import logger
-    from src.agents.video_summarization_agent import VideoSummarizationAgent
+    from src.agents.unified_vision_agent import UnifiedVisionAgent
     from src.core.models import AnalysisRequest, DataType
     from src.core.youtube_comprehensive_analyzer import YouTubeComprehensiveAnalyzer
     from src.core.large_file_processor import LargeFileProcessor
@@ -38,10 +38,10 @@ async def analyze_video_content():
     print(f"Analyzing: {video_path}")
     
     try:
-        # Method 1: Try VideoSummarizationAgent
-        print("\n🔍 Method 1: Using VideoSummarizationAgent...")
+        # Method 1: Try UnifiedVisionAgent
+        print("\n🔍 Method 1: Using UnifiedVisionAgent...")
         try:
-            agent = VideoSummarizationAgent()
+            agent = UnifiedVisionAgent()
             request = AnalysisRequest(
                 data_type=DataType.VIDEO,
                 content=video_path,
@@ -50,7 +50,7 @@ async def analyze_video_content():
             
             result = await agent.process(request)
             
-            print("✅ VideoSummarizationAgent Analysis Results:")
+            print("✅ UnifiedVisionAgent Analysis Results:")
             print(f"   Sentiment: {result.sentiment.label} (confidence: {result.sentiment.confidence:.2f})")
             print(f"   Processing Time: {result.processing_time:.2f} seconds")
             
@@ -63,7 +63,7 @@ async def analyze_video_content():
             await agent.cleanup()
             
         except Exception as e:
-            print(f"❌ VideoSummarizationAgent failed: {e}")
+            print(f"❌ UnifiedVisionAgent failed: {e}")
         
         # Method 2: Try YouTubeComprehensiveAnalyzer
         print("\n🔍 Method 2: Using YouTubeComprehensiveAnalyzer...")

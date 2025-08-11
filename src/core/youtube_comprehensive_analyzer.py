@@ -15,8 +15,8 @@ from datetime import datetime
 from loguru import logger
 
 from src.core.youtube_dl_service import YouTubeDLService, VideoInfo, AudioInfo
-from src.agents.audio_agent_enhanced import EnhancedAudioAgent
-from src.agents.vision_agent_enhanced import EnhancedVisionAgent
+from src.agents.unified_audio_agent import UnifiedAudioAgent
+from src.agents.unified_vision_agent import UnifiedVisionAgent
 from src.agents.web_agent_enhanced import EnhancedWebAgent
 from src.core.models import AnalysisRequest, AnalysisResult, DataType, SentimentResult
 
@@ -47,8 +47,8 @@ class YouTubeComprehensiveAnalyzer:
         
         # Initialize services
         self.youtube_dl_service = YouTubeDLService(str(self.download_path))
-        self.audio_agent = EnhancedAudioAgent()
-        self.vision_agent = EnhancedVisionAgent()
+        self.audio_agent = UnifiedAudioAgent()
+        self.vision_agent = UnifiedVisionAgent()
         self.web_agent = EnhancedWebAgent()
         
         # Analysis settings
