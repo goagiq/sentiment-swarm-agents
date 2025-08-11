@@ -307,11 +307,13 @@ class UnifiedAudioAgent(BaseAgent):
     async def _initialize_models(self):
         """Initialize Ollama models for audio processing."""
         try:
-            self.ollama_model = await get_ollama_model(
-                model_name=self.model_name,
-                model_type="audio"
-            )
-            logger.info(f"Initialized Ollama model: {self.model_name}")
+            # Get the audio model by type only
+            self.ollama_model = get_ollama_model(model_type="audio")
+            if self.ollama_model:
+                logger.info(f"Initialized Ollama audio model: {self.ollama_model.model_id}")
+            else:
+                logger.warning("No audio model available, falling back to text model")
+                self.ollama_model = get_ollama_model(model_type="text")
         except Exception as e:
             logger.warning(f"Failed to initialize Ollama model: {e}")
             self.ollama_model = None
@@ -346,11 +348,10 @@ class UnifiedAudioAgent(BaseAgent):
             def progress_callback(progress):
                 logger.info(f"Processing large audio file: {progress:.1f}%")
             
-            # Process the large file
-            result = await self.large_file_processor.process_large_file(
-                file_path=audio_path,
-                processing_function=self._process_audio_chunk,
-                progress_callback=progress_callback
+            # Process the large file using progressive audio analysis
+            result = await self.large_file_processor.progressive_audio_analysis(
+                audio_path=audio_path,
+                processor_func=self._process_audio_chunk
             )
             
             # Create analysis result from chunked processing

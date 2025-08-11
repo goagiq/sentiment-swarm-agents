@@ -72,7 +72,8 @@ fastmcp==0.1.0
 mcp==1.0.0
 
 # Video downloading
-yt-dlp==2023.12.0
+yt-dlp==2025.8.11
+ffmpeg-python==0.2.0
 
 # PDF processing
 PyPDF2==3.0.0

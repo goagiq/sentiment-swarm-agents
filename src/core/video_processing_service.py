@@ -319,9 +319,21 @@ class VideoProcessingService:
             # Download video
             video_info = await self.youtube_dl_service.download_video(video_url)
 
-            # Extract audio if requested
+            # Extract audio if requested - use workaround method for better reliability
             if extract_audio and video_info.video_path:
-                audio_info = await self.youtube_dl_service.extract_audio(video_url)
+                try:
+                    # Try the workaround method first for better reliability
+                    audio_info = await self.youtube_dl_service.extract_audio_workaround(video_url)
+                    logger.info("Audio extracted successfully using workaround method")
+                except Exception as e:
+                    logger.warning(f"Audio extraction workaround failed: {e}")
+                    try:
+                        # Fallback to direct audio extraction
+                        audio_info = await self.youtube_dl_service.extract_audio(video_url)
+                        logger.info("Audio extracted successfully using direct method")
+                    except Exception as e2:
+                        logger.warning(f"Direct audio extraction also failed: {e2}")
+                        audio_info = None
 
             # Extract frames if requested
             if extract_frames and video_info.video_path:

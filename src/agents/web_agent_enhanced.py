@@ -294,44 +294,40 @@ class EnhancedWebAgent(BaseAgent):
         }
     
     async def _extract_youtube_metadata_async(self, url: str) -> Optional[Dict]:
-        """Extract YouTube metadata using yt-dlp asynchronously."""
+        """Extract YouTube metadata using enhanced yt-dlp service asynchronously."""
         try:
-            loop = asyncio.get_event_loop()
+            # Use the enhanced YouTube-DL service for better reliability
+            from src.core.youtube_dl_service import YouTubeDLService
             
-            def extract_metadata():
-                ydl_opts = {
-                    'quiet': True,
-                    'no_warnings': True,
-                    'extract_flat': False,
-                    'writeinfojson': False,
-                    'skip_download': True,
-                }
-                ydl = yt_dlp.YoutubeDL(ydl_opts)
-                return ydl.extract_info(url, download=False)
+            # Create a temporary service instance
+            youtube_service = YouTubeDLService(download_path="./temp/youtube_metadata")
             
-            info = await loop.run_in_executor(None, extract_metadata)
+            # Get metadata using the enhanced service with retry mechanisms
+            metadata = await youtube_service.get_metadata(url)
             
-            if info:
+            if metadata:
                 return {
-                    "title": info.get("title", ""),
-                    "uploader": info.get("uploader", ""),
-                    "upload_date": info.get("upload_date", ""),
-                    "duration": info.get("duration", 0),
-                    "view_count": info.get("view_count", 0),
-                    "like_count": info.get("like_count", 0),
-                    "comment_count": info.get("comment_count", 0),
-                    "description": info.get("description", ""),
-                    "tags": info.get("tags", []),
-                    "categories": info.get("categories", []),
-                    "has_transcript": bool(info.get("subtitles") or info.get("automatic_captions")),
-                    "thumbnail_count": len(info.get("thumbnails", [])),
-                    "format_count": len(info.get("formats", []))
+                    "title": metadata.title,
+                    "uploader": "Unknown",  # Not available in VideoMetadata
+                    "upload_date": metadata.upload_date,
+                    "duration": metadata.duration,
+                    "view_count": metadata.view_count,
+                    "like_count": metadata.like_count,
+                    "comment_count": 0,  # Not available in VideoMetadata
+                    "description": metadata.description,
+                    "tags": [],  # Not available in VideoMetadata
+                    "categories": [],  # Not available in VideoMetadata
+                    "has_transcript": False,  # Not available in VideoMetadata
+                    "thumbnail_count": 0,  # Not available in VideoMetadata
+                    "format_count": len(metadata.available_formats),
+                    "enhanced_extraction": True,
+                    "platform": metadata.platform
                 }
             
             return None
             
         except Exception as e:
-            logger.error(f"yt-dlp metadata extraction failed: {e}")
+            logger.error(f"Enhanced yt-dlp metadata extraction failed: {e}")
             return None
     
     def _create_enhanced_text(self, yt_metadata: Dict, original_text: str) -> str:

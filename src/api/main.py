@@ -99,6 +99,18 @@ class PDFRequest(BaseModel):
     confidence_threshold: float = 0.8
 
 
+class YouTubeRequest(BaseModel):
+    video_url: str
+    extract_audio: bool = True
+    extract_frames: bool = True
+    num_frames: int = 10
+    generate_summary: bool = True
+    model_preference: Optional[str] = None
+    reflection_enabled: bool = True
+    max_iterations: int = 3
+    confidence_threshold: float = 0.8
+
+
 # Response models
 class HealthResponse(BaseModel):
     status: str
@@ -241,6 +253,27 @@ async def analyze_pdf(request: PDFRequest):
         raise HTTPException(status_code=500, detail=f"PDF analysis failed: {str(e)}")
 
 
+# YouTube analysis endpoint
+@app.post("/analyze/youtube", response_model=AnalysisResult)
+async def analyze_youtube(request: YouTubeRequest):
+    """Analyze YouTube video for sentiment using enhanced download service."""
+    try:
+        result = await orchestrator.analyze_youtube(
+            video_url=request.video_url,
+            extract_audio=request.extract_audio,
+            extract_frames=request.extract_frames,
+            num_frames=request.num_frames,
+            generate_summary=request.generate_summary,
+            model_preference=request.model_preference,
+            reflection_enabled=request.reflection_enabled,
+            max_iterations=request.max_iterations,
+            confidence_threshold=request.confidence_threshold
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"YouTube analysis failed: {str(e)}")
+
+
 # Generic analysis endpoint
 @app.post("/analyze", response_model=AnalysisResult)
 async def analyze_generic(request: AnalysisRequest):
@@ -302,6 +335,7 @@ async def root():
             "audio_analysis": "/analyze/audio",
             "webpage_analysis": "/analyze/webpage",
             "pdf_analysis": "/analyze/pdf",
+            "youtube_analysis": "/analyze/youtube",
             "models": "/models",
             "agent_status": "/agents/status"
         }

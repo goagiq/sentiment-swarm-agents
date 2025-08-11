@@ -133,33 +133,64 @@ class EnhancedYouTubeComprehensiveAnalyzer:
         extract_frames: bool, 
         num_frames: int
     ) -> tuple[VideoInfo, Optional[AudioInfo], List[str]]:
-        """Extract video, audio, and frames from YouTube URL."""
+        """Extract video components with enhanced error handling and fallbacks."""
         video_info = None
         audio_info = None
-        extracted_frames = []
+        frame_paths = []
         
         try:
-            # Download video
+            # Try to download video first
+            logger.info(f"Attempting to download video: {video_url}")
             video_info = await self.youtube_dl_service.download_video(video_url)
             logger.info(f"Video downloaded: {video_info.title}")
             
-            # Extract audio if requested
-            if extract_audio:
-                audio_info = await self.youtube_dl_service.extract_audio(video_url)
-                logger.info(f"Audio extracted: {audio_info.audio_path}")
-            
-            # Extract frames if requested
-            if extract_frames and video_info.video_path:
-                extracted_frames = await self.youtube_dl_service.extract_frames(
-                    video_info.video_path, num_frames
-                )
-                logger.info(f"Extracted {len(extracted_frames)} frames")
-            
-            return video_info, audio_info, extracted_frames
-            
         except Exception as e:
-            logger.error(f"Failed to extract video components: {e}")
-            return video_info, audio_info, extracted_frames
+            logger.warning(f"Video download failed: {e}")
+            # Try metadata-only extraction as fallback
+            try:
+                logger.info("Attempting metadata-only extraction as fallback")
+                metadata = await self.youtube_dl_service.extract_metadata_only(video_url)
+                video_info = VideoInfo(
+                    title=metadata.title,
+                    duration=metadata.duration,
+                    platform=metadata.platform,
+                    metadata={
+                        'description': metadata.description,
+                        'upload_date': metadata.upload_date,
+                        'view_count': metadata.view_count,
+                        'like_count': metadata.like_count,
+                        'available_formats': metadata.available_formats
+                    }
+                )
+                logger.info(f"Metadata extracted: {video_info.title}")
+            except Exception as metadata_error:
+                logger.error(f"Metadata extraction also failed: {metadata_error}")
+                raise ValueError(f"Could not extract video information: {e}")
+        
+        # Try to extract audio if requested
+        if extract_audio and video_info:
+            try:
+                if video_info.video_path:
+                    # Extract audio from downloaded video
+                    audio_info = await self.youtube_dl_service.extract_audio_from_video(video_info.video_path)
+                else:
+                    # Try direct audio extraction
+                    audio_info = await self.youtube_dl_service.extract_audio(video_url)
+                logger.info("Audio extraction successful")
+            except Exception as e:
+                logger.warning(f"Audio extraction failed: {e}")
+                audio_info = None
+        
+        # Try to extract frames if requested and video file is available
+        if extract_frames and video_info and video_info.video_path:
+            try:
+                frame_paths = await self.youtube_dl_service.extract_frames(video_info.video_path, num_frames)
+                logger.info(f"Extracted {len(frame_paths)} frames")
+            except Exception as e:
+                logger.warning(f"Frame extraction failed: {e}")
+                frame_paths = []
+        
+        return video_info, audio_info, frame_paths
     
     async def _analyze_audio(self, audio_path: str) -> tuple[SentimentResult, Dict[str, Any]]:
         """Analyze audio content using Enhanced Audio Agent."""
@@ -676,14 +707,14 @@ class EnhancedYouTubeComprehensiveAnalyzer:
 # Example usage
 async def main():
     """Example usage of YouTubeComprehensiveAnalyzer."""
-    analyzer = YouTubeComprehensiveAnalyzer()
+    analyzer = EnhancedYouTubeComprehensiveAnalyzer()
     
     # Test URL
     test_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
     
     try:
         print("Starting comprehensive YouTube analysis...")
-        result = await analyzer.analyze_youtube_video(
+        result = await analyzer.analyze_youtube_video_parallel(
             test_url,
             extract_audio=True,
             extract_frames=True,

@@ -60,11 +60,12 @@ class UnifiedVisionAgent(BaseAgent):
         self.ollama_model = None
         self.sentiment_pipeline = None
         
-        # Initialize YouTube-DL service if enabled
+        # Initialize enhanced YouTube-DL service if enabled
         if self.enable_youtube_integration:
             self.youtube_dl_service = YouTubeDLService(
                 download_path=config.youtube_dl.download_path
             )
+            logger.info("Enhanced YouTube-DL service initialized with retry mechanisms and audio workaround")
         
         # Initialize enhanced web agent for metadata extraction
         self.web_agent = EnhancedWebAgent()
@@ -345,18 +346,24 @@ class UnifiedVisionAgent(BaseAgent):
     async def _initialize_models(self):
         """Initialize Ollama models for vision processing."""
         try:
-            self.ollama_model = await get_ollama_model(
-                model_name=self.model_name,
-                model_type="vision"
-            )
+            # Get the vision model by type only
+            self.ollama_model = get_ollama_model(model_type="vision")
+            if self.ollama_model:
+                logger.info(f"Initialized Ollama vision model: {self.ollama_model.model_id}")
+            else:
+                logger.warning("No vision model available, falling back to text model")
+                self.ollama_model = get_ollama_model(model_type="text")
             
             # Initialize sentiment pipeline
-            self.sentiment_pipeline = pipeline(
-                "sentiment-analysis",
-                model="distilbert-base-uncased-finetuned-sst-2-english"
-            )
-            
-            logger.info(f"Initialized Ollama model: {self.model_name}")
+            try:
+                self.sentiment_pipeline = pipeline(
+                    "sentiment-analysis",
+                    model="distilbert-base-uncased-finetuned-sst-2-english"
+                )
+            except Exception as e:
+                logger.warning(f"Failed to initialize sentiment pipeline: {e}")
+                self.sentiment_pipeline = None
+                
         except Exception as e:
             logger.warning(f"Failed to initialize models: {e}")
             self.ollama_model = None
@@ -557,11 +564,10 @@ class UnifiedVisionAgent(BaseAgent):
             def progress_callback(progress):
                 logger.info(f"Processing large video file: {progress:.1f}%")
             
-            # Process the large file
-            result = await self.large_file_processor.process_large_file(
-                file_path=video_path,
-                processing_function=self._process_video_chunk,
-                progress_callback=progress_callback
+            # Process the large file using progressive video analysis
+            result = await self.large_file_processor.progressive_video_analysis(
+                video_path=video_path,
+                processor_func=self._process_video_chunk
             )
             
             # Create analysis result from chunked processing
