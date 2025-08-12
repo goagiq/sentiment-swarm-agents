@@ -288,9 +288,9 @@ class TranslationService:
                 n_results=1
             )
 
-            if results and results[0].score > 0.9:  # High similarity threshold
+            if results and results[0]['score'] > 0.9:  # High similarity threshold
                 # Reconstruct TranslationResult from stored data
-                metadata = results[0].metadata
+                metadata = results[0]['metadata']
                 return TranslationResult(
                     original_text=metadata.get("original_text", text),
                     translated_text=metadata.get("translated_text", text),
@@ -311,11 +311,15 @@ class TranslationService:
     async def _store_translation_memory(self, translation_result: TranslationResult):
         """Store translation in memory for future use."""
         try:
+            # Get metadata and sanitize it for ChromaDB compatibility
+            metadata = translation_result.to_dict()
+            sanitized_metadata = self.vector_db.sanitize_metadata(metadata)
+            
             # Store in vector database
             await self.vector_db.add_texts(
                 collection_name="translations",
                 texts=[translation_result.original_text],
-                metadatas=[translation_result.to_dict()]
+                metadatas=[sanitized_metadata]
             )
 
         except Exception as e:

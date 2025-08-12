@@ -47,9 +47,17 @@ scikit-learn==1.3.0
 # Visualization
 matplotlib==3.7.0
 seaborn==0.12.0
+plotly==5.17.0
+dash==2.14.0
+bokeh==3.2.0
 
 # Web interface
 streamlit==1.28.0
+
+# Business Intelligence
+pandas>=2.0.0
+numpy>=1.24.0
+scipy>=1.11.0
 
 # File handling
 python-multipart==0.0.6
@@ -70,6 +78,7 @@ typer==0.9.0
 ollama==0.1.0
 fastmcp==0.1.0
 mcp==1.0.0
+# Note: Strands framework uses mock implementation - no external dependency needed
 
 # Video downloading
 yt-dlp==2025.8.11
@@ -91,3 +100,18 @@ prometheus-client==0.19.0
 # Production utilities
 gunicorn==21.2.0
 uvloop==0.19.0
+
+# Phase 4: Export & Automation
+reportlab>=4.0.0
+weasyprint>=60.0
+openpyxl>=3.1.0
+xlsxwriter>=3.1.0
+jinja2>=3.1.0
+
+# Phase 5: Semantic Search & Agent Reflection
+sentence-transformers>=2.2.0
+faiss-cpu>=1.7.0
+scikit-learn>=1.3.0
+asyncio-mqtt>=0.13.0
+websockets>=11.0.0
+redis>=4.5.0

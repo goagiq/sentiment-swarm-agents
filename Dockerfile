@@ -19,9 +19,9 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy requirements and install Python dependencies
-COPY requirements.txt .
+COPY requirements.prod.txt .
 RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
+    pip install -r requirements.prod.txt
 
 # Production stage
 FROM python:3.11-slim as production
@@ -63,11 +63,11 @@ RUN mkdir -p /app/data /app/cache /app/logs /app/temp \
 USER appuser
 
 # Expose ports
-EXPOSE 8000 8002
+EXPOSE 8000 8003 8501 8502
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8002/health || exit 1
+    CMD curl -f http://localhost:8003/health || exit 1
 
 # Default command
 CMD ["python", "main.py"]

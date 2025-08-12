@@ -218,130 +218,158 @@ class UnifiedVisionAgent(BaseAgent):
             )
     
     async def _process_standard_vision(self, content: Dict, request: AnalysisRequest) -> AnalysisResult:
-        """Process standard vision content."""
-        if self.enable_summarization and request.data_type == DataType.VIDEO:
-            return await self._process_with_summarization(content, request)
-        else:
-            return await self._process_basic_vision(content, request)
-    
+        """Process standard vision content with full transcription/analysis."""
+        try:
+            # Get full content based on data type
+            if request.data_type == DataType.VIDEO:
+                full_content = await self._get_full_video_content(content)
+            elif request.data_type == DataType.IMAGE:
+                full_content = await self._get_full_image_content(content)
+            else:
+                full_content = str(content)
+            
+            # Perform sentiment analysis on full content
+            sentiment_result = await self._analyze_enhanced_sentiment(content)
+            
+            # Create result with full content in extracted_text
+            result = AnalysisResult(
+                request_id=request.id,
+                data_type=request.data_type,
+                sentiment=sentiment_result,
+                processing_time=0.0,  # Will be set by parent
+                status="completed",
+                raw_content=str(request.content),
+                extracted_text=full_content,  # Store full content
+                metadata={
+                    "agent_id": self.agent_id,
+                    "method": "enhanced_vision_analysis",
+                    "content_type": "full_content",
+                    "is_full_content": True,
+                    "has_full_transcription": request.data_type == DataType.VIDEO,
+                    "has_translation": False,  # Can be updated if translation is added
+                    "content_length": len(full_content),
+                    "expected_min_length": 50,
+                    "processing_mode": "standard",
+                    "data_type": request.data_type.value
+                }
+            )
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Standard vision processing failed: {e}")
+            return self._create_error_result(request, str(e))
+
     async def _process_with_summarization(self, content: Dict, request: AnalysisRequest) -> AnalysisResult:
-        """Process vision content with summarization capabilities."""
-        # Use Strands agent to process the request with enhanced tool coordination
-        system_prompt = (
-            "You are an enhanced vision analysis expert with comprehensive "
-            "capabilities. Use the available tools to analyze the visual content "
-            "and generate summaries.\n\n"
-            "Available tools:\n"
-            "- analyze_image_sentiment: Analyze image sentiment\n"
-            "- process_video_frame: Process video frames\n"
-            "- extract_vision_features: Extract visual features\n"
-            "- generate_video_summary: Generate video summary\n"
-            "- extract_key_scenes: Extract key scenes\n"
-            "- identify_key_moments: Identify key moments\n"
-            "- analyze_visual_content: Analyze visual content\n"
-            "- create_scene_timeline: Create scene timeline\n"
-            "- generate_executive_summary: Generate executive summary\n"
-            "- analyze_video_topics: Analyze video topics\n\n"
-            "Process the content step by step:\n"
-            "1. First analyze the visual content and extract features\n"
-            "2. Then generate a comprehensive summary\n"
-            "3. Extract key scenes and moments\n"
-            "4. Create timeline and identify topics\n"
-            "5. Generate executive summary\n\n"
-            "Always use the tools rather than trying to analyze directly."
-        )
+        """Process vision content with full content, sentiment analysis, and summary."""
+        try:
+            # Get full content based on data type
+            if request.data_type == DataType.VIDEO:
+                full_content = await self._get_full_video_content(content)
+            elif request.data_type == DataType.IMAGE:
+                full_content = await self._get_full_image_content(content)
+            else:
+                full_content = str(content)
+            
+            # Perform sentiment analysis on full content
+            sentiment_result = await self._analyze_enhanced_sentiment(content)
+            
+            # Generate summary from full content
+            summary_result = await self.generate_video_summary(str(content))
+            summary_text = ""
+            if summary_result.get("status") == "success":
+                summary_content = summary_result.get("content", [{}])[0]
+                summary_text = summary_content.get("text", "")
+            
+            # Create result with full content in extracted_text and summary in metadata
+            result = AnalysisResult(
+                request_id=request.id,
+                data_type=request.data_type,
+                sentiment=sentiment_result,
+                processing_time=0.0,  # Will be set by parent
+                status="completed",
+                raw_content=str(request.content),
+                extracted_text=full_content,  # Store full content, not summary
+                metadata={
+                    "agent_id": self.agent_id,
+                    "method": "enhanced_vision_analysis_with_summary",
+                    "content_type": "full_content",
+                    "is_full_content": True,
+                    "has_full_transcription": request.data_type == DataType.VIDEO,
+                    "has_translation": False,
+                    "content_length": len(full_content),
+                    "expected_min_length": 50,
+                    "processing_mode": "with_summarization",
+                    "summary": summary_text,  # Store summary separately
+                    "summary_length": len(summary_text),
+                    "data_type": request.data_type.value
+                }
+            )
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Vision processing with summarization failed: {e}")
+            return self._create_error_result(request, str(e))
 
-        # Update the agent's system prompt for this specific task
-        self.strands_agent.system_prompt = system_prompt
-        
-        # Invoke the Strands agent with the vision analysis request
-        prompt = (
-            f"Analyze this visual content comprehensively: {content}\n\n"
-            f"Please use the available tools to perform a comprehensive "
-            f"analysis including visual analysis, summarization, key scenes "
-            f"extraction, and topic identification."
-        )
-        response = await self.strands_agent.invoke_async(prompt)
-        
-        # Parse the response and create sentiment result
-        sentiment_result = await self._analyze_enhanced_sentiment(content)
-        
-        return AnalysisResult(
-            request_id=request.id,
-            data_type=request.data_type,
-            sentiment=sentiment_result,
-            processing_time=0.0,  # Will be set by base class
-            status=None,  # Will be set by base class
-            raw_content=str(request.content),
-            extracted_text=str(response),
-            metadata={
-                "agent_id": self.agent_id,
-                "model": self.metadata["model"],
-                "language": request.language,
-                "method": "enhanced_with_summarization",
-                "tools_used": [
-                    "analyze_image_sentiment", "process_video_frame",
-                    "generate_video_summary", "extract_key_scenes",
-                    "identify_key_moments"
-                ]
-            }
-        )
-    
-    async def _process_basic_vision(self, content: Dict, request: AnalysisRequest) -> AnalysisResult:
-        """Process vision content with basic capabilities only."""
-        # Use Strands agent to process the request with basic tool coordination
-        system_prompt = (
-            "You are a vision analysis expert. Use the available "
-            "tools to analyze the visual content.\n\n"
-            "Available tools:\n"
-            "- analyze_image_sentiment: Analyze image sentiment\n"
-            "- process_video_frame: Process video frames\n"
-            "- extract_vision_features: Extract visual features\n"
-            "- fallback_vision_analysis: Fallback analysis\n"
-            "- download_video_frames: Download video frames\n"
-            "- analyze_video_sentiment: Analyze video sentiment\n"
-            "- get_video_metadata: Get video metadata\n\n"
-            "Process the content step by step:\n"
-            "1. First analyze the visual content and extract features\n"
-            "2. Then analyze sentiment and metadata\n"
-            "3. Process video frames if applicable\n\n"
-            "Always use the tools rather than trying to analyze directly."
-        )
+    async def _get_full_video_content(self, content: Dict) -> str:
+        """Get full video content including transcription and visual analysis."""
+        try:
+            video_path = str(content)
+            
+            # Get video transcription if available
+            transcription = ""
+            try:
+                transcript_result = await self.create_video_transcript(video_path)
+                if transcript_result.get("status") == "success":
+                    transcript_content = transcript_result.get("content", [{}])[0]
+                    transcription = transcript_content.get("text", "")
+            except Exception as e:
+                logger.warning(f"Video transcription failed: {e}")
+            
+            # Get visual analysis
+            visual_analysis = ""
+            try:
+                visual_result = await self.analyze_visual_content(video_path)
+                if visual_result.get("status") == "success":
+                    visual_content = visual_result.get("content", [{}])[0]
+                    visual_analysis = visual_content.get("text", "")
+            except Exception as e:
+                logger.warning(f"Visual analysis failed: {e}")
+            
+            # Combine transcription and visual analysis
+            full_content = ""
+            if transcription:
+                full_content += f"TRANSCRIPTION:\n{transcription}\n\n"
+            if visual_analysis:
+                full_content += f"VISUAL ANALYSIS:\n{visual_analysis}\n"
+            
+            return full_content if full_content else f"Video content from: {video_path}"
+            
+        except Exception as e:
+            logger.error(f"Failed to get full video content: {e}")
+            return str(content)
 
-        # Update the agent's system prompt for this specific task
-        self.strands_agent.system_prompt = system_prompt
-        
-        # Invoke the Strands agent with the vision analysis request
-        prompt = (
-            f"Analyze this visual content: {content}\n\n"
-            f"Please use the available tools to perform a comprehensive "
-            f"analysis including visual analysis, sentiment analysis, "
-            f"and feature extraction."
-        )
-        response = await self.strands_agent.invoke_async(prompt)
-        
-        # Parse the response and create sentiment result
-        sentiment_result = await self._analyze_enhanced_sentiment(content)
-        
-        return AnalysisResult(
-            request_id=request.id,
-            data_type=request.data_type,
-            sentiment=sentiment_result,
-            processing_time=0.0,  # Will be set by base class
-            status=None,  # Will be set by base class
-            raw_content=str(request.content),
-            extracted_text=str(response),
-            metadata={
-                "agent_id": self.agent_id,
-                "model": self.metadata["model"],
-                "language": request.language,
-                "method": "enhanced_basic",
-                "tools_used": [
-                    "analyze_image_sentiment", "process_video_frame",
-                    "extract_vision_features"
-                ]
-            }
-        )
+    async def _get_full_image_content(self, content: Dict) -> str:
+        """Get full image content including visual analysis."""
+        try:
+            image_path = str(content)
+            
+            # Get comprehensive image analysis
+            analysis = ""
+            try:
+                analysis_result = await self.analyze_image_sentiment(image_path)
+                if analysis_result.get("status") == "success":
+                    analysis_content = analysis_result.get("content", [{}])[0]
+                    analysis = analysis_content.get("text", "")
+            except Exception as e:
+                logger.warning(f"Image analysis failed: {e}")
+            
+            return analysis if analysis else f"Image content from: {image_path}"
+            
+        except Exception as e:
+            logger.error(f"Failed to get full image content: {e}")
+            return str(content)
     
     async def _initialize_models(self):
         """Initialize Ollama models for vision processing."""

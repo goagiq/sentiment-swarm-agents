@@ -153,6 +153,10 @@ class UnifiedTextAgent(BaseAgent):
             self.analyze_text_sentiment,
             self.extract_text_features,
             self.fallback_sentiment_analysis,
+            # Summarization tools
+            self.generate_text_summary,
+            self.extract_key_points,
+            self.identify_themes,
             # Translation tools
             self.translate_text,
             self.translate_document,
@@ -188,9 +192,9 @@ class UnifiedTextAgent(BaseAgent):
             if self.use_swarm:
                 result = await self._process_with_swarm(text_content, request)
             elif self.use_strands:
-                result = await self._process_with_strands(text_content, request)
+                result = await self._process_with_strands(text_content, request, start_time)
             else:
-                result = await self._process_simple(text_content, request)
+                result = await self._process_simple(text_content, request, start_time)
             
             return result
             
@@ -256,7 +260,7 @@ class UnifiedTextAgent(BaseAgent):
             }
         )
     
-    async def _process_with_strands(self, text_content: str, request: AnalysisRequest) -> AnalysisResult:
+    async def _process_with_strands(self, text_content: str, request: AnalysisRequest, start_time: float) -> AnalysisResult:
         """Process text using Strands framework."""
         system_prompt = (
             "You are a text sentiment analysis expert. Use the available "
@@ -290,8 +294,8 @@ class UnifiedTextAgent(BaseAgent):
             request_id=request.id,
             data_type=request.data_type,
             sentiment=sentiment_result,
-            processing_time=0.0,  # Will be set by base class
-            status=None,  # Will be set by base class
+            processing_time=asyncio.get_event_loop().time() - start_time,
+            status="completed",
             raw_content=str(request.content),
             extracted_text=text_content,
             metadata={
@@ -379,9 +383,13 @@ class UnifiedTextAgent(BaseAgent):
                 return await self.fallback_sentiment_analysis(text)
             
             # Get the response
-            response = await sentiment_agent.invoke_async(
-                f"Analyze this text: {text}"
-            )
+            try:
+                response = await sentiment_agent.invoke_async(
+                    f"Analyze this text: {text}"
+                )
+            except Exception as e:
+                logger.error(f"Error invoking sentiment agent: {e}")
+                return await self.fallback_sentiment_analysis(text)
             
             return {
                 "status": "success",
@@ -434,18 +442,29 @@ class UnifiedTextAgent(BaseAgent):
                     "emotional_content": "neutral"
                 }
             else:
-                response = await feature_agent.invoke_async(
-                    f"Extract features from this text: {text}"
-                )
-                # Parse response to extract features
-                features = {
-                    "word_count": len(text.split()),
-                    "avg_word_length": sum(len(word) for word in text.split()) / max(len(text.split()), 1),
-                    "sentiment_indicators": [],
-                    "key_topics": [],
-                    "emotional_content": "neutral",
-                    "extracted_features": str(response)
-                }
+                try:
+                    response = await feature_agent.invoke_async(
+                        f"Extract features from this text: {text}"
+                    )
+                    # Parse response to extract features
+                    features = {
+                        "word_count": len(text.split()),
+                        "avg_word_length": sum(len(word) for word in text.split()) / max(len(text.split()), 1),
+                        "sentiment_indicators": [],
+                        "key_topics": [],
+                        "emotional_content": "neutral",
+                        "extracted_features": str(response)
+                    }
+                except Exception as e:
+                    logger.error(f"Error invoking feature agent: {e}")
+                    # Fallback feature extraction
+                    features = {
+                        "word_count": len(text.split()),
+                        "avg_word_length": sum(len(word) for word in text.split()) / max(len(text.split()), 1),
+                        "sentiment_indicators": [],
+                        "key_topics": [],
+                        "emotional_content": "neutral"
+                    }
             
             return {
                 "status": "success",
@@ -822,4 +841,123 @@ class UnifiedTextAgent(BaseAgent):
                 "status": "error",
                 "error": str(e),
                 "detected_language": "unknown"
+            }
+
+    # Summarization tools
+    @tool
+    async def generate_text_summary(self, text: str, summary_type: str = "comprehensive") -> dict:
+        """Generate a summary of the text content."""
+        try:
+            # Create analysis request for summarization
+            request = AnalysisRequest(
+                data_type=DataType.TEXT,
+                content=text,
+                language="en",
+                metadata={
+                    "summary_type": summary_type,
+                    "include_key_points": True,
+                    "include_entities": True
+                }
+            )
+            
+            # Process the request
+            result = await self.process(request)
+            
+            # Extract summary from result
+            summary = ""
+            if hasattr(result, 'summary') and result.summary:
+                summary = result.summary
+            elif hasattr(result, 'sentiment') and result.sentiment.reasoning:
+                summary = result.sentiment.reasoning
+            else:
+                summary = "Summary generated successfully"
+            
+            return {
+                "status": "success",
+                "summary_type": summary_type,
+                "summary": summary,
+                "key_points": result.metadata.get('key_points', []) if result.metadata else [],
+                "entities": result.metadata.get('entities', []) if result.metadata else [],
+                "processing_time": result.processing_time
+            }
+        except Exception as e:
+            logger.error(f"Text summarization failed: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "summary": "Failed to generate summary"
+            }
+
+    @tool
+    async def extract_key_points(self, text: str) -> dict:
+        """Extract key points from the text content."""
+        try:
+            # Create analysis request for key point extraction
+            request = AnalysisRequest(
+                data_type=DataType.TEXT,
+                content=text,
+                language="en",
+                metadata={
+                    "extract_key_points": True,
+                    "summary_type": "detailed"
+                }
+            )
+            
+            # Process the request
+            result = await self.process(request)
+            
+            # Extract key points from result
+            key_points = result.metadata.get('key_points', []) if result.metadata else []
+            
+            return {
+                "status": "success",
+                "key_points": key_points,
+                "total_points": len(key_points),
+                "processing_time": result.processing_time
+            }
+        except Exception as e:
+            logger.error(f"Key point extraction failed: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "key_points": []
+            }
+
+    @tool
+    async def identify_themes(self, text: str) -> dict:
+        """Identify themes and concepts in the text content."""
+        try:
+            # Create analysis request for theme identification
+            request = AnalysisRequest(
+                data_type=DataType.TEXT,
+                content=text,
+                language="en",
+                metadata={
+                    "identify_themes": True,
+                    "extract_concepts": True
+                }
+            )
+            
+            # Process the request
+            result = await self.process(request)
+            
+            # Extract themes and concepts from result
+            themes = result.metadata.get('themes', []) if result.metadata else []
+            concepts = result.metadata.get('key_concepts', []) if result.metadata else []
+            
+            return {
+                "status": "success",
+                "themes": themes,
+                "concepts": concepts,
+                "total_themes": len(themes),
+                "total_concepts": len(concepts),
+                "processing_time": result.processing_time
+            }
+        except Exception as e:
+            logger.error(f"Theme identification failed: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "themes": [],
+                "concepts": []
             }

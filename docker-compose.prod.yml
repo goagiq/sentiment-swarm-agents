@@ -6,7 +6,9 @@ services:
     restart: unless-stopped
     ports:
       - "8000:8000"  # MCP Server
-      - "8002:8002"  # FastAPI Server
+      - "8003:8003"  # FastAPI Server
+      - "8501:8501"  # Streamlit Main UI
+      - "8502:8502"  # Streamlit Landing Page
     environment:
       - NODE_ENV=production
       - OLLAMA_HOST=http://ollama:11434

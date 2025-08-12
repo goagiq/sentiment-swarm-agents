@@ -15,7 +15,7 @@ from typing import Dict, List, Any
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.agents.file_extraction_agent import FileExtractionAgent
-from src.agents.text_agent import TextAgent
+from src.agents.unified_text_agent import UnifiedTextAgent
 from src.core.models import AnalysisRequest, DataType
 
 # Configure logging
@@ -31,7 +31,7 @@ class ClassicalChineseAnalyzer:
     
     def __init__(self):
         self.file_agent = FileExtractionAgent()
-        self.text_agent = TextAgent()
+        self.text_agent = UnifiedTextAgent()
         
     async def analyze_pdf_pages(self, pdf_path: str) -> Dict[str, Any]:
         """Analyze each page of the PDF file."""

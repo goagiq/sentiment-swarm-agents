@@ -5,6 +5,7 @@ A consolidated and optimized sentiment analysis system with unified agents for t
 ## 🚀 Key Features
 
 - **Unified Agents**: Three comprehensive agents replace 10+ specialized implementations
+- **Consolidated MCP Server**: Optimized from 44 to 4 category servers (PDF, Audio, Video, Website)
 - **Optimized MCP Server**: Streamlined tool interface with unified access
 - **Multi-Modal Analysis**: Text, audio, video, image, webpage, and PDF sentiment analysis
 - **Configurable Processing Modes**: Simple, Strands, and Swarm modes for text processing
@@ -20,6 +21,32 @@ A consolidated and optimized sentiment analysis system with unified agents for t
 - **Local Deployment**: Run everything locally with CPU optimization
 - **Interactive Visualizations**: D3.js-based knowledge graph visualization with zoom and pan
 - **Production Ready**: Docker support, monitoring, logging, and security features
+
+## 📁 Project Structure
+
+```
+Sentiment/
+├── src/                    # Main source code
+│   ├── agents/            # Unified agents implementation
+│   ├── api/               # API endpoints and FastAPI app
+│   ├── config/            # Configuration management
+│   ├── core/              # Core services and utilities
+│   └── mcp/               # MCP server implementation
+├── Test/                  # All test files organized by functionality
+├── docs/                  # Comprehensive documentation
+├── Results/               # Analysis results and reports
+│   └── reports/          # Generated report files
+├── scripts/              # Utility scripts and automation
+├── data/                 # Data files and extracted content
+├── examples/             # Example usage and demos
+├── cache/                # Cache and temporary files
+├── models/               # Model files and configurations
+├── ui/                   # User interface components
+├── monitoring/           # Monitoring and logging
+├── k8s/                  # Kubernetes configurations
+├── nginx/                # Web server configurations
+└── main.py              # Main application entry point
+```
 
 ### 🤖 Enhanced Ollama Integration
 
@@ -53,6 +80,30 @@ The system includes comprehensive video analysis capabilities that automatically
 - **Batch Processing**: Analyze multiple YouTube videos efficiently
 - **Error Handling**: Graceful handling of download restrictions and errors
 - **Resource Management**: Automatic cleanup of temporary files
+
+### 🔧 Consolidated MCP Server Architecture
+
+The system features a highly optimized MCP (Model Context Protocol) server architecture that consolidates 44 individual servers into 4 category-specific servers:
+
+- **PDF Processing Server**: Handles all PDF-related operations including text extraction, image conversion, summarization, translation, vector storage, and knowledge graph creation
+- **Audio Processing Server**: Manages audio transcription, spectrogram generation, summarization, translation, vector storage, and knowledge graph creation
+- **Video Processing Server**: Processes video content with OCR, frame extraction, summarization, translation, vector storage, and knowledge graph creation
+- **Website Processing Server**: Handles web scraping, screenshot generation, summarization, translation, vector storage, and knowledge graph creation
+
+Each server provides 6 core functions:
+1. **Text Extraction**: Extract text from content (OCR for images/videos, transcription for audio)
+2. **Content Conversion**: Convert content to images (PDF pages, video frames, spectrograms, screenshots)
+3. **Summarization**: Generate comprehensive summaries of content
+4. **Translation**: Translate content from foreign languages to English
+5. **Vector Storage**: Store processed content in ChromaDB for semantic search
+6. **Knowledge Graph**: Create structured knowledge graphs from content
+
+**Benefits:**
+- **90.9% Server Reduction**: From 44 to 4 servers
+- **Unified Interface**: Consistent API across all content types
+- **Resource Optimization**: Reduced memory and CPU usage
+- **Simplified Configuration**: Centralized configuration management
+- **Enhanced Scalability**: Better resource allocation and load balancing
 
 ### 🧠 GraphRAG-Inspired Knowledge Graph Features
 
@@ -814,6 +865,17 @@ Comprehensive documentation is available in the `docs/` directory:
 - **Integration Guides**: MCP server integration and API usage
 - **Implementation Summaries**: Detailed technical implementation notes
 - **Production Guides**: Deployment, monitoring, and security best practices
+- **Codebase Organization**: Cleanup and organization guidelines
+
+### Documentation Structure
+```
+docs/
+├── Implementation Guides/     # Feature implementation details
+├── Configuration Guides/      # Setup and configuration
+├── Production Guides/         # Deployment and operations
+├── Implementation Summaries/  # Technical implementation notes
+└── CODEBASE_CLEANUP_AND_ORGANIZATION.md  # Organization guidelines
+```
 
 ## 🧪 Testing
 
@@ -830,6 +892,13 @@ pytest Test/test_main_integration.py
 # Run with coverage
 pytest --cov=src --cov-report=html
 ```
+
+### Test Organization
+The `/Test/` directory contains all test files organized by functionality:
+- **Core Functionality Tests**: Main system integration and agent tests
+- **Feature Tests**: YouTube, vision, audio, and translation analysis tests
+- **Configuration Tests**: Model configuration and settings tests
+- **Integration Tests**: End-to-end integration and verification tests
 
 ### Production Testing
 ```bash
@@ -935,6 +1004,8 @@ For support and questions:
 
 ## 🔄 Recent Updates
 
+- **Codebase Cleanup**: Complete reorganization of file structure for improved maintainability
+- **Enhanced Knowledge Graph Integration**: Fully integrated enhanced knowledge graph functionality
 - **Production Deployment**: Added Docker, Kubernetes, and monitoring support
 - **Security Features**: API key authentication, CORS, and rate limiting
 - **Performance Optimization**: Caching, connection pooling, and memory management

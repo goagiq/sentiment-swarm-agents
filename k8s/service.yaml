@@ -14,8 +14,16 @@ spec:
     targetPort: 8000
     protocol: TCP
   - name: api
-    port: 8002
-    targetPort: 8002
+    port: 8003
+    targetPort: 8003
+    protocol: TCP
+  - name: streamlit-main
+    port: 8501
+    targetPort: 8501
+    protocol: TCP
+  - name: streamlit-landing
+    port: 8502
+    targetPort: 8502
     protocol: TCP
   type: ClusterIP
 ---

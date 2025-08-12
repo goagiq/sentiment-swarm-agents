@@ -7,6 +7,18 @@ from typing import Dict, List, Optional
 from loguru import logger
 from src.config.model_config import model_config
 
+# Import the new Strands-based integration
+try:
+    from .strands_ollama_integration import (
+        strands_ollama_integration,
+        StrandsOllamaModel,
+        get_strands_ollama_model
+    )
+    STRANDS_AVAILABLE = True
+except ImportError:
+    STRANDS_AVAILABLE = False
+    logger.warning("Strands Ollama integration not available")
+
 
 class OllamaModel:
     """Simple Ollama model representation."""
@@ -25,7 +37,7 @@ class OllamaModel:
 
 
 class OllamaIntegration:
-    """Ollama integration manager."""
+    """Ollama integration manager with Strands support."""
 
     def __init__(self, host: str = None):
         # Use configurable host or default
@@ -158,6 +170,22 @@ class OllamaIntegration:
             logger.error(f"Error checking model availability: {e}")
             return False
 
+    async def generate_text(self, prompt: str, model_type: str = "text", **kwargs) -> str:
+        """Generate text using the specified Ollama model."""
+        try:
+            # Try to use Strands integration first
+            if STRANDS_AVAILABLE:
+                strands_model = get_strands_ollama_model(model_type)
+                if strands_model:
+                    return await strands_model.generate_text(prompt, **kwargs)
+            
+            # Fallback to direct API call
+            return await self.generate_response(model_type, prompt, **kwargs)
+            
+        except Exception as e:
+            logger.error(f"Error generating text with Ollama: {e}")
+            return f"Error generating text: {str(e)}"
+
     async def generate_response(
         self,
         model: str,
@@ -222,6 +250,12 @@ def get_ollama_model(model_type: str = "text") -> Optional[OllamaModel]:
 def create_ollama_agent(model_type: str = "text", **kwargs):
     """Create an agent with Ollama model."""
     try:
+        # Try to use Strands integration first
+        if STRANDS_AVAILABLE:
+            from .strands_ollama_integration import create_strands_ollama_agent
+            return create_strands_ollama_agent(model_type, **kwargs)
+        
+        # Fallback to mock implementation
         from core.strands_mock import Agent
 
         model = get_ollama_model(model_type)

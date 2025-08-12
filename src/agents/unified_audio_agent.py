@@ -183,72 +183,91 @@ class UnifiedAudioAgent(BaseAgent):
             )
     
     async def _process_standard_audio(self, audio_path: str, request: AnalysisRequest) -> AnalysisResult:
-        """Process standard audio file."""
-        if self.enable_summarization:
-            return await self._process_with_summarization(audio_path, request)
-        else:
-            return await self._process_basic_audio(audio_path, request)
-    
-    async def _process_with_summarization(self, audio_path: str, request: AnalysisRequest) -> AnalysisResult:
-        """Process audio with summarization capabilities."""
-        # Use Strands agent to process the request with enhanced tool coordination
-        system_prompt = (
-            "You are an enhanced audio sentiment analysis expert with comprehensive "
-            "capabilities. Use the available tools to analyze the sentiment and "
-            "features of the given audio content.\n\n"
-            "Available tools:\n"
-            "- transcribe_audio_enhanced: Enhanced audio transcription\n"
-            "- analyze_audio_sentiment_enhanced: Enhanced audio sentiment analysis\n"
-            "- extract_audio_features_enhanced: Extract comprehensive audio features\n"
-            "- generate_audio_summary: Generate comprehensive audio summary\n"
-            "- extract_key_points: Extract key points from audio\n"
-            "- identify_action_items: Identify action items from audio\n"
-            "- analyze_audio_quality: Assess audio quality\n"
-            "- analyze_audio_emotion: Analyze emotional content\n"
-            "- fallback_audio_analysis_enhanced: Enhanced fallback analysis\n\n"
-            "Process the audio content step by step:\n"
-            "1. First transcribe the audio to get the text content\n"
-            "2. Then analyze sentiment and extract features\n"
-            "3. Generate a comprehensive summary with key points\n"
-            "4. Identify action items and topics\n"
-            "5. Assess audio quality and emotional content\n\n"
-            "Always use the tools rather than trying to analyze directly."
-        )
+        """Process standard audio with full transcription and sentiment analysis."""
+        try:
+            # Get full transcription
+            full_transcription = await self._perform_enhanced_transcription(audio_path)
+            
+            # Perform sentiment analysis on full transcription
+            sentiment_result = await self._perform_enhanced_sentiment_analysis(
+                full_transcription, audio_path
+            )
+            
+            # Create result with full transcription in extracted_text
+            result = AnalysisResult(
+                request_id=request.id,
+                data_type=request.data_type,
+                sentiment=sentiment_result,
+                processing_time=0.0,  # Will be set by parent
+                status="completed",
+                raw_content=str(request.content),
+                extracted_text=full_transcription,  # Store full transcription
+                metadata={
+                    "agent_id": self.agent_id,
+                    "method": "enhanced_audio_analysis",
+                    "audio_path": audio_path,
+                    "content_type": "full_transcription",
+                    "is_full_content": True,
+                    "has_full_transcription": True,
+                    "transcription_length": len(full_transcription),
+                    "expected_min_length": 50,  # Minimum expected transcription length
+                    "processing_mode": "standard"
+                }
+            )
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Standard audio processing failed: {e}")
+            return self._create_error_result(request, str(e))
 
-        # Update the agent's system prompt for this specific task
-        self.strands_agent.system_prompt = system_prompt
-        
-        # Invoke the Strands agent with the audio analysis request
-        prompt = (
-            f"Analyze this audio file comprehensively: {audio_path}\n\n"
-            f"Please use the available tools to perform a comprehensive "
-            f"analysis including transcription, sentiment analysis, summarization, "
-            f"key points extraction, and action items identification."
-        )
-        response = await self.strands_agent.invoke_async(prompt)
-        
-        # Parse the response and create sentiment result
-        sentiment_result = await self._parse_enhanced_audio_sentiment(str(response))
-        
-        return AnalysisResult(
-            request_id=request.id,
-            data_type=request.data_type,
-            sentiment=sentiment_result,
-            processing_time=0.0,  # Will be set by base class
-            status=None,  # Will be set by base class
-            raw_content=str(request.content),
-            extracted_text=str(response),
-            metadata={
-                "agent_id": self.agent_id,
-                "model": self.metadata["model"],
-                "language": request.language,
-                "method": "enhanced_with_summarization",
-                "tools_used": [
-                    "transcribe_audio_enhanced", "analyze_audio_sentiment_enhanced",
-                    "generate_audio_summary", "extract_key_points", "identify_action_items"
-                ]
-            }
-        )
+    async def _process_with_summarization(self, audio_path: str, request: AnalysisRequest) -> AnalysisResult:
+        """Process audio with full transcription, sentiment analysis, and summary."""
+        try:
+            # Get full transcription
+            full_transcription = await self._perform_enhanced_transcription(audio_path)
+            
+            # Perform sentiment analysis on full transcription
+            sentiment_result = await self._perform_enhanced_sentiment_analysis(
+                full_transcription, audio_path
+            )
+            
+            # Generate summary from full transcription
+            summary_result = await self.generate_audio_summary(audio_path)
+            summary_text = ""
+            if summary_result.get("status") == "success":
+                summary_content = summary_result.get("content", [{}])[0]
+                summary_text = summary_content.get("text", "")
+            
+            # Create result with full transcription in extracted_text and summary in metadata
+            result = AnalysisResult(
+                request_id=request.id,
+                data_type=request.data_type,
+                sentiment=sentiment_result,
+                processing_time=0.0,  # Will be set by parent
+                status="completed",
+                raw_content=str(request.content),
+                extracted_text=full_transcription,  # Store full transcription, not summary
+                metadata={
+                    "agent_id": self.agent_id,
+                    "method": "enhanced_audio_analysis_with_summary",
+                    "audio_path": audio_path,
+                    "content_type": "full_transcription",
+                    "is_full_content": True,
+                    "has_full_transcription": True,
+                    "transcription_length": len(full_transcription),
+                    "expected_min_length": 50,
+                    "processing_mode": "with_summarization",
+                    "summary": summary_text,  # Store summary separately
+                    "summary_length": len(summary_text)
+                }
+            )
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Audio processing with summarization failed: {e}")
+            return self._create_error_result(request, str(e))
     
     async def _process_basic_audio(self, audio_path: str, request: AnalysisRequest) -> AnalysisResult:
         """Process audio with basic capabilities only."""

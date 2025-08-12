@@ -2,6 +2,8 @@
 Orchestrator for managing the agent swarm and routing requests.
 """
 
+import os
+import asyncio
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 
@@ -13,12 +15,13 @@ from src.agents.unified_vision_agent import UnifiedVisionAgent
 from src.agents.unified_audio_agent import UnifiedAudioAgent
 from src.agents.web_agent_enhanced import EnhancedWebAgent
 from src.agents.knowledge_graph_agent import KnowledgeGraphAgent
-from src.agents.file_extraction_agent import FileExtractionAgent
+from src.agents.enhanced_file_extraction_agent import EnhancedFileExtractionAgent
 from src.core.models import (
     AnalysisRequest, AnalysisResult, DataType,
     ModelConfig
 )
 from src.core.model_manager import ModelManager
+from src.core.duplicate_detection_service import DuplicateDetectionService
 
 
 class SentimentOrchestrator:
@@ -30,6 +33,9 @@ class SentimentOrchestrator:
         self.request_cache: Dict[str, AnalysisResult] = {}
         self.cache_ttl = 3600  # 1 hour
         self.cache_timestamps: Dict[str, datetime] = {}
+        
+        # Initialize duplicate detection service
+        self.duplicate_detection = DuplicateDetectionService()
 
         # Initialize agents
         self._register_agents()
@@ -59,13 +65,46 @@ class SentimentOrchestrator:
             DataType.WEBPAGE, DataType.PDF, DataType.SOCIAL_MEDIA
         ])
 
-        # File Extraction agent
-        file_extraction_agent = FileExtractionAgent()
+        # Enhanced File Extraction agent (using fixed version)
+        file_extraction_agent = EnhancedFileExtractionAgent()
         self._register_agent(file_extraction_agent, [DataType.PDF])
+
+        # Phase 4: Export & Automation Agents
+        from src.agents.report_generation_agent import ReportGenerationAgent
+        from src.agents.data_export_agent import DataExportAgent
+        
+        report_generation_agent = ReportGenerationAgent()
+        self._register_agent(report_generation_agent, [
+            DataType.TEXT, DataType.AUDIO, DataType.VIDEO,
+            DataType.WEBPAGE, DataType.PDF, DataType.SOCIAL_MEDIA
+        ])
+        
+        data_export_agent = DataExportAgent()
+        self._register_agent(data_export_agent, [
+            DataType.TEXT, DataType.AUDIO, DataType.VIDEO,
+            DataType.WEBPAGE, DataType.PDF, DataType.SOCIAL_MEDIA
+        ])
+
+        # Phase 5: Semantic Search & Agent Reflection Agents
+        from src.agents.semantic_search_agent import SemanticSearchAgent
+        from src.agents.reflection_agent import ReflectionCoordinatorAgent
+        
+        semantic_search_agent = SemanticSearchAgent()
+        self._register_agent(semantic_search_agent, [
+            DataType.TEXT, DataType.AUDIO, DataType.VIDEO,
+            DataType.WEBPAGE, DataType.PDF, DataType.SOCIAL_MEDIA
+        ])
+        
+        reflection_coordinator_agent = ReflectionCoordinatorAgent()
+        self._register_agent(reflection_coordinator_agent, [
+            DataType.TEXT, DataType.AUDIO, DataType.VIDEO,
+            DataType.WEBPAGE, DataType.PDF, DataType.SOCIAL_MEDIA
+        ])
 
         logger.info(
             f"Registered {len(self.agents)} unified agents including "
-            f"GraphRAG-inspired Knowledge Graph Agent and File Extraction Agent"
+            f"GraphRAG-inspired Knowledge Graph Agent, File Extraction Agent, "
+            f"Phase 4 Export & Automation Agents, and Phase 5 Semantic Search & Agent Reflection Agents"
         )
 
     def _register_agent(self, agent: BaseAgent, supported_types: List[DataType]):
@@ -131,6 +170,21 @@ class SentimentOrchestrator:
 
     async def analyze(self, request: AnalysisRequest) -> AnalysisResult:
         """Analyze content using the appropriate agent."""
+        # Check for duplicates first
+        duplicate_result = await self._check_duplicates(request)
+        if duplicate_result.is_duplicate:
+            if duplicate_result.recommendation == "skip":
+                logger.info(f"Skipping duplicate request {request.id}")
+                # Return cached result if available
+                cache_key = self._generate_cache_key(request)
+                if cache_key in self.request_cache and self._is_cache_valid(cache_key):
+                    return self.request_cache[cache_key]
+                # Return a result indicating duplicate was found
+                return self._create_duplicate_result(request, duplicate_result)
+            elif duplicate_result.recommendation == "update":
+                logger.info(f"Updating existing result for request {request.id}")
+                # Continue with processing to update the result
+
         # Check cache first
         cache_key = self._generate_cache_key(request)
         if cache_key in self.request_cache:
@@ -154,6 +208,9 @@ class SentimentOrchestrator:
         else:
             result = await agent.process(request)
 
+        # Record processing in duplicate detection service
+        await self._record_processing(request, result)
+
         # Cache the result
         self._cache_result(cache_key, result)
 
@@ -164,7 +221,13 @@ class SentimentOrchestrator:
         suitable_agents = []
 
         for agent in self.agents.values():
-            if await agent.can_process(request):
+            # Handle both async and sync can_process methods
+            if asyncio.iscoroutinefunction(agent.can_process):
+                can_process_result = await agent.can_process(request)
+            else:
+                can_process_result = agent.can_process(request)
+            
+            if can_process_result:
                 suitable_agents.append(agent)
 
         if not suitable_agents:
@@ -360,3 +423,104 @@ class SentimentOrchestrator:
         await self.model_manager.cleanup()
 
         logger.info("Orchestrator cleanup completed")
+
+    async def _check_duplicates(self, request: AnalysisRequest):
+        """Check for duplicates using the duplicate detection service."""
+        try:
+            # Extract file path if content is a file path
+            file_path = None
+            content = None
+            
+            if isinstance(request.content, str):
+                if os.path.exists(request.content):
+                    file_path = request.content
+                else:
+                    content = request.content
+            
+            # Check for duplicates
+            duplicate_result = await self.duplicate_detection.detect_duplicates(
+                file_path=file_path,
+                content=content,
+                data_type=request.data_type.value,
+                agent_id=request.id,
+                force_reprocess=getattr(request, 'force_reprocess', False)
+            )
+            
+            return duplicate_result
+            
+        except Exception as e:
+            logger.error(f"Error checking duplicates: {e}")
+            # Return no duplicate found on error
+            from src.core.duplicate_detection_service import DuplicateDetectionResult
+            return DuplicateDetectionResult(
+                is_duplicate=False,
+                duplicate_type=None,
+                confidence=0.0,
+                existing_metadata=None,
+                similarity_score=None,
+                recommendation="process"
+            )
+
+    def _create_duplicate_result(self, request: AnalysisRequest, duplicate_result):
+        """Create a result indicating a duplicate was found."""
+        from src.core.models import SentimentResult, ProcessingStatus
+        
+        return AnalysisResult(
+            request_id=request.id,
+            data_type=request.data_type,
+            sentiment=SentimentResult(
+                label="duplicate",
+                confidence=duplicate_result.confidence,
+                metadata={
+                    "duplicate_type": duplicate_result.duplicate_type,
+                    "existing_metadata": duplicate_result.existing_metadata.__dict__ if duplicate_result.existing_metadata else None,
+                    "similarity_score": duplicate_result.similarity_score,
+                    "recommendation": duplicate_result.recommendation
+                }
+            ),
+            processing_time=0.0,
+            status=ProcessingStatus.COMPLETED,
+            metadata={
+                "duplicate_detected": True,
+                "duplicate_type": duplicate_result.duplicate_type,
+                "recommendation": duplicate_result.recommendation
+            }
+        )
+
+    async def _record_processing(self, request: AnalysisRequest, result: AnalysisResult):
+        """Record processing in the duplicate detection service."""
+        try:
+            # Extract file path if content is a file path
+            file_path = None
+            content = None
+            
+            if isinstance(request.content, str):
+                if os.path.exists(request.content):
+                    file_path = request.content
+                else:
+                    content = request.content
+            
+            # Record processing
+            await self.duplicate_detection.record_processing(
+                file_path=file_path,
+                content=content,
+                data_type=request.data_type.value,
+                agent_id=result.metadata.get("agent_id", "unknown"),
+                result_id=result.id,
+                metadata={
+                    "sentiment_label": result.sentiment.label,
+                    "confidence": result.sentiment.confidence,
+                    "processing_time": result.processing_time
+                }
+            )
+            
+        except Exception as e:
+            logger.error(f"Error recording processing: {e}")
+
+    async def get_duplicate_stats(self):
+        """Get statistics about duplicate detection."""
+        try:
+            return await self.duplicate_detection.get_processing_stats()
+        except Exception as e:
+            logger.error(f"Error getting duplicate stats: {e}")
+            return {}

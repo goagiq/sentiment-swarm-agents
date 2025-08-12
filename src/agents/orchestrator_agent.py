@@ -149,6 +149,43 @@ class OrchestratorAgent(StrandsBaseAgent):
         elif request.data_type == DataType.WEBPAGE:
             return "web_sentiment_analysis"
         
+        # Phase 2: External Data Integration
+        elif request.data_type == DataType.SOCIAL_MEDIA:
+            return "social_media_analysis"
+        elif request.data_type == DataType.DATABASE:
+            return "database_connection"
+        elif request.data_type == DataType.API:
+            return "api_integration"
+        elif request.data_type == DataType.MARKET_DATA:
+            return "market_data_analysis"
+        elif request.data_type == DataType.FINANCIAL:
+            return "financial_data_integration"
+        
+        # Phase 3: Multi-Modal Analysis
+        elif request.data_type == DataType.GENERAL:
+            # Route based on content keywords for Phase 3
+            if any(keyword in content for keyword in ["comprehensive", "multi-modal", "cross-modal", "all modalities"]):
+                return "comprehensive_content_analysis"
+            elif any(keyword in content for keyword in ["story", "narrative", "storytelling"]):
+                return "content_storytelling"
+            elif any(keyword in content for keyword in ["business intelligence", "bi report", "comprehensive report"]):
+                return "business_intelligence_report"
+            elif any(keyword in content for keyword in ["actionable", "insights", "recommendations"]):
+                return "actionable_insights"
+            elif any(keyword in content for keyword in ["data story", "presentation", "slides"]):
+                return "data_storytelling"
+            # Phase 2 routing for GENERAL data type
+            elif any(keyword in content for keyword in ["social", "twitter", "linkedin", "facebook"]):
+                return "social_media_analysis"
+            elif any(keyword in content for keyword in ["database", "sql", "mongodb", "postgresql"]):
+                return "database_connection"
+            elif any(keyword in content for keyword in ["api", "rest", "graphql", "soap"]):
+                return "api_integration"
+            elif any(keyword in content for keyword in ["market", "financial", "stock", "trading"]):
+                return "market_data_analysis"
+            else:
+                return "text_sentiment_analysis"
+        
         # Default to text analysis
         return "text_sentiment_analysis"
     

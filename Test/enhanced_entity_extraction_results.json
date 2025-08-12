@@ -1,0 +1,118 @@
+[
+  {
+    "test_name": "Person Names Test",
+    "success": true,
+    "name_accuracy": 1.0,
+    "type_accuracy": 1.0,
+    "overall_accuracy": 1.0,
+    "entities_found": 4,
+    "extracted_entities": [
+      "习近平",
+      "李克强",
+      "马云",
+      "北京"
+    ],
+    "extracted_types": [
+      "person",
+      "person",
+      "person",
+      "location"
+    ],
+    "expected_entities": [
+      "习近平",
+      "李克强",
+      "马云",
+      "北京"
+    ],
+    "expected_types": [
+      "person",
+      "person",
+      "person",
+      "location"
+    ]
+  },
+  {
+    "test_name": "Organizations Test",
+    "success": true,
+    "name_accuracy": 1.0,
+    "type_accuracy": 1.0,
+    "overall_accuracy": 1.0,
+    "entities_found": 3,
+    "extracted_entities": [
+      "华为",
+      "阿里巴巴",
+      "深圳"
+    ],
+    "extracted_types": [
+      "organization",
+      "organization",
+      "location"
+    ],
+    "expected_entities": [
+      "华为",
+      "阿里巴巴",
+      "深圳"
+    ],
+    "expected_types": [
+      "organization",
+      "organization",
+      "location"
+    ]
+  },
+  {
+    "test_name": "Technical Terms Test",
+    "success": true,
+    "name_accuracy": 1.0,
+    "type_accuracy": 1.0,
+    "overall_accuracy": 1.0,
+    "entities_found": 2,
+    "extracted_entities": [
+      "人工智能",
+      "机器学习"
+    ],
+    "extracted_types": [
+      "concept",
+      "concept"
+    ],
+    "expected_entities": [
+      "人工智能",
+      "机器学习"
+    ],
+    "expected_types": [
+      "concept",
+      "concept"
+    ]
+  },
+  {
+    "test_name": "Mixed Entities Test",
+    "success": true,
+    "name_accuracy": 1.0,
+    "type_accuracy": 0.75,
+    "overall_accuracy": 0.875,
+    "entities_found": 4,
+    "extracted_entities": [
+      "马云",
+      "阿里巴巴",
+      "北京",
+      "杭州"
+    ],
+    "extracted_types": [
+      "person | organization",
+      "organization",
+      "location",
+      "location"
+    ],
+    "expected_entities": [
+      "马云",
+      "杭州",
+      "阿里巴巴",
+      "北京"
+    ],
+    "expected_types": [
+      "person",
+      "location",
+      "organization",
+      "location"
+    ]
+  }
+]

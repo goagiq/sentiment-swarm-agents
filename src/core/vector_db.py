@@ -99,10 +99,82 @@ class VectorDBManager:
             logger.error(f"Failed to store result in vector database: {e}")
             raise
 
+    async def find_similar_content(
+        self, 
+        content: str, 
+        threshold: float = 0.95,
+        n_results: int = 5
+    ) -> List[Dict[str, Any]]:
+        """Find similar content in the vector database."""
+        try:
+            # Search for similar content
+            search_results = self.results_collection.query(
+                query_texts=[content],
+                n_results=n_results
+            )
+
+            similar_results = []
+            for i in range(len(search_results["ids"][0])):
+                distance = search_results["distances"][0][i]
+                similarity = 1.0 - distance  # Convert distance to similarity
+                
+                if similarity >= threshold:
+                    result = {
+                        "id": search_results["ids"][0][i],
+                        "text": search_results["documents"][0][i],
+                        "metadata": search_results["metadatas"][0][i],
+                        "similarity": similarity,
+                        "distance": distance
+                    }
+                    similar_results.append(result)
+
+            logger.info(f"Found {len(similar_results)} similar results")
+            return similar_results
+
+        except Exception as e:
+            logger.error(f"Failed to find similar content: {e}")
+            return []
+
+    async def check_content_duplicate(
+        self, 
+        content: str, 
+        threshold: float = 0.98
+    ) -> Optional[Dict[str, Any]]:
+        """Check if content is a duplicate of existing content."""
+        try:
+            similar_results = await self.find_similar_content(content, threshold, 1)
+            
+            if similar_results:
+                return similar_results[0]
+            
+            return None
+
+        except Exception as e:
+            logger.error(f"Failed to check content duplicate: {e}")
+            return None
+
+    def sanitize_metadata(self, metadata: Dict[str, Any]) -> Dict[str, Any]:
+        """Sanitize metadata to ensure ChromaDB compatibility."""
+        sanitized = {}
+        for key, value in metadata.items():
+            if isinstance(value, (str, int, float, bool, type(None))):
+                sanitized[key] = value
+            elif isinstance(value, dict):
+                # Convert dict to JSON string
+                sanitized[key] = json.dumps(value, ensure_ascii=False)
+            elif isinstance(value, list):
+                # Convert list to JSON string
+                sanitized[key] = json.dumps(value, ensure_ascii=False)
+            else:
+                # Convert other types to string
+                sanitized[key] = str(value)
+        return sanitized
+
     def _result_to_document(self, result: AnalysisResult) -> Dict[str, Any]:
         """Convert AnalysisResult to document format for ChromaDB."""
         # Create text representation for embedding
-        text_content = result.extracted_text or str(result.raw_content) or ""
+        # Prioritize full content over summaries for better search and retrieval
+        text_content = self._get_full_content_for_storage(result)
 
         # Create metadata
         metadata = {
@@ -121,7 +193,14 @@ class VectorDBManager:
             "agent_id": result.metadata.get("agent_id", "unknown"),
             "method": result.metadata.get("method", "unknown"),
             "quality_score": result.quality_score,
-            "reflection_enabled": result.reflection_enabled
+            "reflection_enabled": result.reflection_enabled,
+            "content_type": result.metadata.get(
+                "content_type", "full_content"
+            ),
+            "has_full_transcription": result.metadata.get(
+                "has_full_transcription", False
+            ),
+            "has_translation": result.metadata.get("has_translation", False)
         }
 
         # Add sentiment scores if available
@@ -135,10 +214,62 @@ class VectorDBManager:
         # Filter out None values from metadata (ChromaDB doesn't accept None values)
         metadata = {k: v for k, v in metadata.items() if v is not None}
 
+        # Sanitize metadata for ChromaDB compatibility
+        metadata = self.sanitize_metadata(metadata)
+
         return {
             "text": text_content,
             "metadata": metadata
         }
+
+    def _get_full_content_for_storage(self, result: AnalysisResult) -> str:
+        """Get the most appropriate content for vector storage, prioritizing full content."""
+        # Check if we have full transcription/translation in metadata
+        full_transcription = result.metadata.get("full_transcription")
+        full_translation = result.metadata.get("full_translation")
+        
+        # Priority order: full transcription > full translation > extracted_text > raw_content
+        if full_transcription:
+            return full_transcription
+        elif full_translation:
+            return full_translation
+        elif result.extracted_text:
+            # Check if extracted_text is actually full content (not a summary)
+            if self._is_full_content(result.extracted_text, result.metadata):
+                return result.extracted_text
+            else:
+                # If it's a summary, try to get full content from metadata
+                full_content = result.metadata.get("full_content")
+                if full_content:
+                    return full_content
+                # Fall back to extracted_text if no full content available
+                return result.extracted_text
+        else:
+            return str(result.raw_content) or ""
+
+    def _is_full_content(self, text: str, metadata: Dict[str, Any]) -> bool:
+        """Determine if the text is full content or a summary."""
+        # Check metadata flags first
+        if metadata.get("is_summary", False):
+            return False
+        if metadata.get("is_full_content", True):
+            return True
+        
+        # Heuristic: if text is very short compared to expected full content, it's likely a summary
+        expected_min_length = metadata.get("expected_min_length", 100)
+        if len(text) < expected_min_length:
+            return False
+        
+        # Check for summary indicators in text
+        summary_indicators = [
+            "summary", "key points", "main points", "overview", "brief",
+            "in summary", "to summarize", "key takeaways"
+        ]
+        text_lower = text.lower()
+        if any(indicator in text_lower for indicator in summary_indicators):
+            return False
+        
+        return True
 
     async def search_similar_results(
         self,
@@ -461,6 +592,87 @@ class VectorDBManager:
         except Exception as e:
             logger.error(f"Failed to get database stats: {e}")
             return {"error": f"Failed to get stats: {str(e)}"}
+
+    async def add_texts(
+        self,
+        collection_name: str,
+        texts: List[str],
+        metadatas: Optional[List[Dict[str, Any]]] = None,
+        ids: Optional[List[str]] = None
+    ) -> List[str]:
+        """Add texts to a specific collection."""
+        try:
+            # Get or create collection
+            collection = self.client.get_or_create_collection(
+                name=collection_name,
+                metadata={"description": f"Collection for {collection_name}"}
+            )
+
+            # Generate IDs if not provided
+            if ids is None:
+                ids = [str(uuid.uuid4()) for _ in texts]
+
+            # Prepare metadatas
+            if metadatas is None:
+                metadatas = [{} for _ in texts]
+
+            # Add to collection
+            collection.add(
+                documents=texts,
+                metadatas=metadatas,
+                ids=ids
+            )
+
+            logger.info(f"Added {len(texts)} texts to collection {collection_name}")
+            return ids
+
+        except Exception as e:
+            logger.error(f"Failed to add texts to collection {collection_name}: {e}")
+            raise
+
+    async def query(
+        self,
+        collection_name: str,
+        query_text: str,
+        n_results: int = 5,
+        filter_metadata: Optional[Dict[str, Any]] = None
+    ) -> List[Dict[str, Any]]:
+        """Query a specific collection."""
+        try:
+            # Get collection
+            collection = self.client.get_collection(collection_name)
+
+            # Prepare query parameters
+            query_params = {
+                "query_texts": [query_text],
+                "n_results": n_results
+            }
+
+            # Add filter if provided
+            if filter_metadata:
+                query_params["where"] = filter_metadata
+
+            # Perform query
+            results = collection.query(**query_params)
+
+            # Format results
+            formatted_results = []
+            if results["ids"] and results["ids"][0]:
+                for i in range(len(results["ids"][0])):
+                    result = {
+                        "id": results["ids"][0][i],
+                        "text": results["documents"][0][i],
+                        "metadata": results["metadatas"][0][i],
+                        "score": 1.0 - results["distances"][0][i] if results["distances"] else 1.0
+                    }
+                    formatted_results.append(result)
+
+            logger.info(f"Query returned {len(formatted_results)} results from {collection_name}")
+            return formatted_results
+
+        except Exception as e:
+            logger.error(f"Failed to query collection {collection_name}: {e}")
+            return []
 
 
 # Global instance

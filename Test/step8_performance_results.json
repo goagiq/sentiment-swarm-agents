@@ -1,0 +1,121 @@
+{
+  "step": 8,
+  "timestamp": 1754955626.0623202,
+  "total_time": 0.0,
+  "statistics": {
+    "total_tests": 12,
+    "passed_tests": 8,
+    "failed_tests": 0,
+    "skipped_tests": 4
+  },
+  "results": {
+    "System": {
+      "initialization": [
+        {
+          "status": "PASS",
+          "duration": 0.0,
+          "details": "Server and config initialized successfully",
+          "timestamp": 1754955626.0598083
+        }
+      ]
+    },
+    "Config": {
+      "pdf_server_structure": [
+        {
+          "status": "PASS",
+          "duration": 0.0,
+          "details": "pdf_server configuration structure valid",
+          "timestamp": 1754955626.0598083
+        }
+      ],
+      "audio_server_structure": [
+        {
+          "status": "PASS",
+          "duration": 0.0,
+          "details": "audio_server configuration structure valid",
+          "timestamp": 1754955626.0598083
+        }
+      ],
+      "video_server_structure": [
+        {
+          "status": "PASS",
+          "duration": 0.0,
+          "details": "video_server configuration structure valid",
+          "timestamp": 1754955626.0598083
+        }
+      ],
+      "website_server_structure": [
+        {
+          "status": "PASS",
+          "duration": 0.0,
+          "details": "website_server configuration structure valid",
+          "timestamp": 1754955626.0598083
+        }
+      ]
+    },
+    "Server": {
+      "PDF_availability": [
+        {
+          "status": "SKIP",
+          "duration": 0.0,
+          "details": "PDF server not enabled",
+          "timestamp": 1754955626.0598083
+        }
+      ],
+      "Audio_availability": [
+        {
+          "status": "SKIP",
+          "duration": 0.0,
+          "details": "Audio server not enabled",
+          "timestamp": 1754955626.0598083
+        }
+      ],
+      "Video_availability": [
+        {
+          "status": "SKIP",
+          "duration": 0.0,
+          "details": "Video server not enabled",
+          "timestamp": 1754955626.0598083
+        }
+      ],
+      "Website_availability": [
+        {
+          "status": "SKIP",
+          "duration": 0.0,
+          "details": "Website server not enabled",
+          "timestamp": 1754955626.0598083
+        }
+      ]
+    },
+    "Language": {
+      "support": [
+        {
+          "status": "PASS",
+          "duration": 0.0,
+          "details": "Language support configured for 0 languages",
+          "timestamp": 1754955626.0598083
+        }
+      ]
+    },
+    "Storage": {
+      "paths": [
+        {
+          "status": "PASS",
+          "duration": 0.0,
+          "details": "All storage paths configured correctly",
+          "timestamp": 1754955626.0598083
+        }
+      ]
+    },
+    "Error": {
+      "handling": [
+        {
+          "status": "PASS",
+          "duration": 0.0,
+          "details": "Error handling working correctly",
+          "timestamp": 1754955626.0598083
+        }
+      ]
+    }
+  }
+}

@@ -53,9 +53,9 @@ def demonstrate_strands_usage():
     print("=== Strands Usage Example ===\n")
     
     try:
-        # Import Strands (this would need to be installed)
-        from strands import Agent
-        from strands.models.ollama import OllamaModel
+        # Import Strands (using mock implementation)
+        from src.core.strands_mock import Agent
+        from src.core.strands_mock import OllamaModel
         
         # Get configuration for text agent
         text_config = config.get_strands_model_config("text")

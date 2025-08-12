@@ -17,6 +17,7 @@ class SentimentLabel(str, Enum):
     NEUTRAL = "neutral"
     MIXED = "mixed"
     UNCERTAIN = "uncertain"
+    DUPLICATE = "duplicate"  # For duplicate detection results
 
 
 class ProcessingStatus(str, Enum):
@@ -38,6 +39,11 @@ class DataType(str, Enum):
     PDF = "pdf"
     API_RESPONSE = "api_response"
     SOCIAL_MEDIA = "social_media"
+    DATABASE = "database"
+    API = "api"
+    MARKET_DATA = "market_data"
+    FINANCIAL = "financial"
+    GENERAL = "general"
 
 
 class ModelType(str, Enum):
@@ -95,6 +101,8 @@ class AnalysisRequest(BaseModel):
     reflection_enabled: bool = True  # Enable reflection for quality improvement
     max_iterations: int = 3  # Maximum reflection iterations
     confidence_threshold: float = 0.8  # Minimum confidence threshold
+    force_reprocess: bool = False  # Force reprocessing even if duplicate detected
+    metadata: Dict[str, Any] = Field(default_factory=dict)  # Additional metadata for processing
 
 
 class SentimentResult(BaseModel):

@@ -23,7 +23,11 @@ spec:
         - name: mcp
           containerPort: 8000
         - name: api
-          containerPort: 8002
+          containerPort: 8003
+        - name: streamlit-main
+          containerPort: 8501
+        - name: streamlit-landing
+          containerPort: 8502
         envFrom:
         - configMapRef:
             name: sentiment-config
@@ -42,7 +46,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 8002
+            port: 8003
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
@@ -50,7 +54,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /health
-            port: 8002
+            port: 8003
           initialDelaySeconds: 5
           periodSeconds: 5
           timeoutSeconds: 3

@@ -16,7 +16,10 @@ from src.core.models import (
     ProcessingStatus,
     SentimentResult,
 )
-from src.core.strands_mock import Agent
+try:
+    from strands import Agent
+except ImportError:
+    from src.core.strands_mock import Agent
 
 logger = logging.getLogger(__name__)
 

@@ -3,7 +3,7 @@ Configuration management for the sentiment analysis system.
 """
 
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 from pydantic_settings import BaseSettings
 from pydantic import Field, ConfigDict
@@ -125,6 +125,24 @@ class AgentConfig(BaseSettings):
     max_video_duration: int = 30  # seconds
     max_audio_duration: int = 300  # seconds
     
+    # Content storage preferences
+    store_full_content: bool = Field(
+        default=True,
+        description="Store full transcriptions/translations instead of summaries in vector database"
+    )
+    store_summaries_separately: bool = Field(
+        default=True,
+        description="Store summaries in metadata for quick access while keeping full content in extracted_text"
+    )
+    content_storage_priority: str = Field(
+        default="full_content",
+        description="Priority order for content storage: 'full_content', 'summary', 'both'"
+    )
+    min_content_length: int = Field(
+        default=50,
+        description="Minimum expected length for full content (used to detect summaries)"
+    )
+    
     # Knowledge Graph settings
     graph_storage_path: str = "./Results/knowledge_graphs"
     enable_graph_visualization: bool = True
@@ -169,7 +187,7 @@ class APIConfig(BaseSettings):
     """Configuration for the API."""
     
     host: str = "0.0.0.0"
-    port: int = 8002
+    port: int = 8003
     debug: bool = False
     workers: int = 1
     
@@ -181,6 +199,50 @@ class APIConfig(BaseSettings):
     cors_origins: list = ["*"]
     cors_methods: list = ["*"]
     cors_headers: list = ["*"]
+
+
+class LanguageConfig(BaseSettings):
+    """Configuration for supported languages."""
+    
+    # Supported languages with their ISO codes and display names
+    supported_languages: Dict[str, str] = Field(
+        default={
+            "en": "English",
+            "es": "Spanish", 
+            "fr": "French",
+            "de": "German",
+            "it": "Italian",
+            "pt": "Portuguese",
+            "zh": "Chinese",
+            "ja": "Japanese",
+            "ko": "Korean",
+            "th": "Thai",
+            "ar": "Arabic",
+            "hi": "Hindi",
+            "ru": "Russian"
+        },
+        description="Supported languages with ISO codes and display names"
+    )
+    
+    # Default language
+    default_language: str = Field(
+        default="en",
+        description="Default language for analysis"
+    )
+    
+    # Language detection settings
+    enable_auto_detection: bool = Field(
+        default=True,
+        description="Enable automatic language detection"
+    )
+    
+    def get_language_list(self) -> List[str]:
+        """Get list of supported language codes."""
+        return list(self.supported_languages.keys())
+    
+    def get_language_name(self, code: str) -> str:
+        """Get display name for a language code."""
+        return self.supported_languages.get(code, code)
 
 
 class SentimentConfig(BaseSettings):
@@ -205,6 +267,9 @@ class SentimentConfig(BaseSettings):
     
     # API configuration
     api: APIConfig = Field(default_factory=APIConfig)
+    
+    # Language configuration
+    language: LanguageConfig = Field(default_factory=LanguageConfig)
     
     # Directories
     base_dir: Path = Field(

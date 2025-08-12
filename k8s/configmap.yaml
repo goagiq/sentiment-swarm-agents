@@ -23,3 +23,13 @@ data:
   OVERLAP_SIZE: "100"
   REDIS_HOST: "redis-service"
   REDIS_PORT: "6379"
+  # Phase 5 Configuration
+  ENABLE_SEMANTIC_SEARCH: "true"
+  ENABLE_AGENT_REFLECTION: "true"
+  SEMANTIC_SEARCH_MODEL: "sentence-transformers/all-MiniLM-L6-v2"
+  VECTOR_DB_TYPE: "chromadb"
+  REFLECTION_ENABLED: "true"
+  MAX_REFLECTION_ITERATIONS: "3"
+  CONFIDENCE_THRESHOLD: "0.7"
+  AUTO_COMBINE_RESULTS: "true"
+  INTELLIGENT_ROUTING: "true"

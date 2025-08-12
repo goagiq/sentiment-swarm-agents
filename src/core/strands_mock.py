@@ -5,6 +5,8 @@ external dependencies.
 """
 
 import asyncio
+import json
+import re
 from typing import Any, Callable, Dict, List, Optional
 from dataclasses import dataclass
 from loguru import logger
@@ -65,6 +67,12 @@ class Agent:
                 response = "The sentiment analysis indicates a negative emotional tone."
             else:
                 response = "The sentiment analysis indicates a neutral emotional tone."
+        elif "请从以下中文文本中精确提取实体" in prompt:
+            # Enhanced Chinese entity extraction response
+            response = self._generate_chinese_entity_response(prompt)
+        elif "extract entities" in prompt.lower():
+            # English entity extraction response
+            response = self._generate_english_entity_response(prompt)
         else:
             response = f"Mock response from agent '{self.name}' for: {prompt[:50]}..."
         
@@ -76,6 +84,117 @@ class Agent:
         })
         
         return response
+
+    def _generate_chinese_entity_response(self, prompt: str) -> str:
+        """Generate structured Chinese entity extraction response."""
+        # Extract text from prompt
+        text_match = re.search(r'文本：(.+?)\n', prompt)
+        if not text_match:
+            return '{"entities": []}'
+        
+        text = text_match.group(1)
+        entities = []
+        
+        # Extract person names
+        person_patterns = [
+            r'习近平', r'李克强', r'马云', r'马化腾', r'任正非', r'李彦宏'
+        ]
+        for pattern in person_patterns:
+            if re.search(pattern, text):
+                entities.append({
+                    "text": pattern,
+                    "type": "PERSON",
+                    "confidence": 0.9
+                })
+        
+        # Extract organizations
+        org_patterns = [
+            r'华为', r'阿里巴巴', r'腾讯', r'百度', r'清华大学', r'北京大学'
+        ]
+        for pattern in org_patterns:
+            if re.search(pattern, text):
+                entities.append({
+                    "text": pattern,
+                    "type": "ORGANIZATION",
+                    "confidence": 0.9
+                })
+        
+        # Extract locations
+        loc_patterns = [
+            r'北京', r'上海', r'深圳', r'广州', r'杭州', r'南京'
+        ]
+        for pattern in loc_patterns:
+            if re.search(pattern, text):
+                entities.append({
+                    "text": pattern,
+                    "type": "LOCATION",
+                    "confidence": 0.9
+                })
+        
+        # Extract technical terms
+        tech_patterns = [
+            r'人工智能', r'机器学习', r'深度学习', r'神经网络'
+        ]
+        for pattern in tech_patterns:
+            if re.search(pattern, text):
+                entities.append({
+                    "text": pattern,
+                    "type": "CONCEPT",
+                    "confidence": 0.9
+                })
+        
+        return json.dumps({"entities": entities}, ensure_ascii=False)
+
+    def _generate_english_entity_response(self, prompt: str) -> str:
+        """Generate structured English entity extraction response."""
+        # Extract text from prompt
+        text_match = re.search(r'Text: (.+?)\n', prompt)
+        if not text_match:
+            return '{"entities": []}'
+        
+        text = text_match.group(1)
+        entities = []
+        
+        # Extract person names
+        person_patterns = [
+            r'Joe Biden', r'Elon Musk', r'Donald Trump', r'Barack Obama'
+        ]
+        for pattern in person_patterns:
+            if re.search(pattern, text, re.IGNORECASE):
+                entities.append({
+                    "name": pattern,
+                    "type": "person",
+                    "importance": "high",
+                    "description": f"Known person: {pattern}"
+                })
+        
+        # Extract organizations
+        org_patterns = [
+            r'Microsoft', r'Apple', r'Google', r'Amazon'
+        ]
+        for pattern in org_patterns:
+            if re.search(pattern, text, re.IGNORECASE):
+                entities.append({
+                    "name": pattern,
+                    "type": "organization",
+                    "importance": "high",
+                    "description": f"Known organization: {pattern}"
+                })
+        
+        # Extract technical terms
+        tech_patterns = [
+            r'AI', r'Artificial Intelligence', r'Machine Learning'
+        ]
+        for pattern in tech_patterns:
+            if re.search(pattern, text, re.IGNORECASE):
+                entities.append({
+                    "name": pattern,
+                    "type": "concept",
+                    "importance": "medium",
+                    "description": f"Technical term: {pattern}"
+                })
+        
+        return json.dumps({"entities": entities})
     
     async def invoke_async(self, prompt: str) -> str:
         """Mock async invocation method."""

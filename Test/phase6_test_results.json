@@ -1,0 +1,158 @@
+{
+  "chinese_content_test_cases": {
+    "Chinese News Article": {
+      "success": false,
+      "error": "'AnalysisResult' object has no attribute 'content'"
+    },
+    "Chinese Technical Document": {
+      "success": false,
+      "error": "'AnalysisResult' object has no attribute 'content'"
+    },
+    "Chinese Business Report": {
+      "success": false,
+      "error": "'AnalysisResult' object has no attribute 'content'"
+    },
+    "Chinese Academic Paper": {
+      "success": false,
+      "error": "'AnalysisResult' object has no attribute 'content'"
+    }
+  },
+  "language_detection_accuracy": {
+    "overall_accuracy": 0.6666666666666666,
+    "detailed_results": {
+      "Chinese Text": {
+        "success": true,
+        "expected": "zh",
+        "detected": "zh",
+        "correct": true
+      },
+      "English Text": {
+        "success": true,
+        "expected": "en",
+        "detected": "en",
+        "correct": true
+      },
+      "Japanese Text": {
+        "success": false,
+        "expected": "ja",
+        "detected": "zh",
+        "correct": false
+      },
+      "Korean Text": {
+        "success": true,
+        "expected": "ko",
+        "detected": "ko",
+        "correct": true
+      },
+      "Spanish Text": {
+        "success": true,
+        "expected": "es",
+        "detected": "es",
+        "correct": true
+      },
+      "French Text": {
+        "success": false,
+        "expected": "fr",
+        "detected": "es",
+        "correct": false
+      }
+    }
+  },
+  "chinese_entity_extraction": {
+    "average_accuracy": 0.41666666666666663,
+    "detailed_results": {
+      "Person Names": {
+        "success": false,
+        "name_accuracy": 0.0,
+        "type_accuracy": 0.0,
+        "overall_accuracy": 0.0,
+        "entities_found": 0,
+        "extracted_entities": [],
+        "extracted_types": []
+      },
+      "Organizations": {
+        "success": false,
+        "name_accuracy": 0.0,
+        "type_accuracy": 0.0,
+        "overall_accuracy": 0.0,
+        "entities_found": 0,
+        "extracted_entities": [],
+        "extracted_types": []
+      },
+      "Locations": {
+        "success": true,
+        "name_accuracy": 1.0,
+        "type_accuracy": 1.0,
+        "overall_accuracy": 1.0,
+        "entities_found": 1,
+        "extracted_entities": [
+          "北京、上海、深圳、广州是中国的主要城市。"
+        ],
+        "extracted_types": [
+          "LOCATION"
+        ]
+      },
+      "Mixed Entities": {
+        "success": true,
+        "name_accuracy": 1.0,
+        "type_accuracy": 0.3333333333333333,
+        "overall_accuracy": 0.6666666666666666,
+        "entities_found": 1,
+        "extracted_entities": [
+          "马云在杭州创立了阿里巴巴集团，该公司总部位于北京。"
+        ],
+        "extracted_types": [
+          "ORGANIZATION"
+        ]
+      }
+    }
+  },
+  "query_translation_accuracy": {
+    "Chinese to English Query": {
+      "success": true,
+      "original_query": "人工智能技术有哪些应用？",
+      "translated_query": "",
+      "expected_translation": "",
+      "translation_time": 0.10817790031433105,
+      "has_results": false
+    },
+    "English to Chinese Query": {
+      "success": true,
+      "original_query": "What companies are working on AI?",
+      "translated_query": "",
+      "expected_translation": "",
+      "translation_time": 0.1082606315612793,
+      "has_results": false
+    },
+    "Technical Query Translation": {
+      "success": true,
+      "original_query": "深度学习在医疗领域的应用",
+      "translated_query": "",
+      "expected_translation": "",
+      "translation_time": 0.10515356063842773,
+      "has_results": false
+    }
+  },
+  "6.5_performance_testing": {
+    "success": false,
+    "error": "No module named 'psutil'"
+  },
+  "integration_testing": {
+    "translation_service": {
+      "success": true,
+      "original": "人工智能技术发展迅速",
+      "translated": "人工智能技术发展迅速",
+      "confidence": 0.8
+    },
+    "graph_report_generation": {
+      "success": true,
+      "has_content": true,
+      "target_language": "zh"
+    },
+    "query_functionality": {
+      "success": true,
+      "has_results": false,
+      "query_language": "zh"
+    }
+  }
+}
