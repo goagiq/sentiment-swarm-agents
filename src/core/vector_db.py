@@ -62,6 +62,22 @@ class VectorDBManager:
                 metadata={"description": "Metadata for sentiment analysis results"}
             )
 
+            # Semantic search collection for enhanced search capabilities
+            self.semantic_collection = self.client.get_or_create_collection(
+                name="semantic_search",
+                metadata={
+                    "description": "Semantic search index for all content types"
+                }
+            )
+
+            # Multi-language search collection
+            self.multilingual_collection = self.client.get_or_create_collection(
+                name="multilingual_search",
+                metadata={
+                    "description": "Multi-language semantic search index"
+                }
+            )
+
             logger.info("ChromaDB collections initialized successfully")
 
         except Exception as e:
@@ -92,12 +108,290 @@ class VectorDBManager:
                 ids=[f"meta_{result.id}"]
             )
 
+            # Index for semantic search
+            await self._index_for_semantic_search(result.id, document)
+
             logger.info(f"Stored result {result.id} in vector database")
             return result.id
 
         except Exception as e:
             logger.error(f"Failed to store result in vector database: {e}")
             raise
+
+    async def _index_for_semantic_search(self, result_id: str, document: Dict[str, Any]):
+        """Index content for semantic search."""
+        try:
+            # Create semantic search document
+            semantic_doc = {
+                "content": document["text"],
+                "content_type": document["metadata"].get("content_type", "text"),
+                "language": document["metadata"].get("language", "en"),
+                "source_id": result_id,
+                "timestamp": document["metadata"].get("timestamp", datetime.now().isoformat()),
+                "sentiment": document["metadata"].get("sentiment_label", "unknown"),
+                "confidence": document["metadata"].get("sentiment_confidence", 0.0)
+            }
+
+            # Store in semantic search collection
+            self.semantic_collection.add(
+                documents=[semantic_doc["content"]],
+                metadatas=[semantic_doc],
+                ids=[f"semantic_{result_id}"]
+            )
+
+            # Store in multilingual collection if not English
+            if semantic_doc["language"] != "en":
+                self.multilingual_collection.add(
+                    documents=[semantic_doc["content"]],
+                    metadatas=[semantic_doc],
+                    ids=[f"multilingual_{result_id}"]
+                )
+
+            logger.debug(f"Indexed {result_id} for semantic search")
+
+        except Exception as e:
+            logger.error(f"Failed to index for semantic search: {e}")
+
+    async def semantic_search(
+        self,
+        query: str,
+        language: str = "en",
+        content_types: Optional[List[str]] = None,
+        n_results: int = 10,
+        similarity_threshold: float = 0.7,
+        include_metadata: bool = True
+    ) -> List[Dict[str, Any]]:
+        """
+        Perform semantic search across all indexed content.
+        
+        Args:
+            query: Search query
+            language: Language filter (use "all" for all languages)
+            content_types: List of content types to search (None for all)
+            n_results: Number of results to return
+            similarity_threshold: Minimum similarity score
+            include_metadata: Whether to include full metadata
+            
+        Returns:
+            List of search results with similarity scores
+        """
+        try:
+            start_time = datetime.now()
+            
+            # Determine which collection to search
+            if language == "all":
+                collection = self.semantic_collection
+            elif language == "en":
+                collection = self.semantic_collection
+            else:
+                collection = self.multilingual_collection
+
+            # Perform semantic search
+            search_results = collection.query(
+                query_texts=[query],
+                n_results=n_results * 2,  # Get more results for filtering
+                where={"language": language} if language != "all" else None
+            )
+
+            # Process and filter results
+            processed_results = []
+            for i in range(len(search_results["ids"][0])):
+                distance = search_results["distances"][0][i]
+                similarity = 1.0 - distance
+                
+                if similarity >= similarity_threshold:
+                    metadata = search_results["metadatas"][0][i]
+                    
+                    # Filter by content type if specified
+                    if content_types and metadata.get("content_type") not in content_types:
+                        continue
+                    
+                    result = {
+                        "id": search_results["ids"][0][i],
+                        "content": search_results["documents"][0][i],
+                        "similarity": similarity,
+                        "content_type": metadata.get("content_type", "unknown"),
+                        "language": metadata.get("language", "en"),
+                        "source_id": metadata.get("source_id"),
+                        "timestamp": metadata.get("timestamp"),
+                        "sentiment": metadata.get("sentiment", "unknown"),
+                        "confidence": metadata.get("confidence", 0.0)
+                    }
+                    
+                    if include_metadata:
+                        result["metadata"] = metadata
+                    
+                    processed_results.append(result)
+                    
+                    # Stop if we have enough results
+                    if len(processed_results) >= n_results:
+                        break
+
+            # Sort by similarity score
+            processed_results.sort(key=lambda x: x["similarity"], reverse=True)
+            
+            processing_time = (datetime.now() - start_time).total_seconds()
+            logger.info(f"Semantic search completed in {processing_time:.3f}s, found {len(processed_results)} results")
+            
+            return processed_results
+
+        except Exception as e:
+            logger.error(f"Failed to perform semantic search: {e}")
+            return []
+
+    async def multi_language_semantic_search(
+        self,
+        query: str,
+        target_languages: List[str] = None,
+        n_results: int = 10,
+        similarity_threshold: float = 0.7
+    ) -> Dict[str, List[Dict[str, Any]]]:
+        """
+        Perform semantic search across multiple languages.
+        
+        Args:
+            query: Search query
+            target_languages: List of target languages (None for all)
+            n_results: Number of results per language
+            similarity_threshold: Minimum similarity score
+            
+        Returns:
+            Dictionary with language as key and results as value
+        """
+        try:
+            if target_languages is None:
+                target_languages = ["en", "zh", "ru", "ja", "ko", "ar", "hi"]
+            
+            results = {}
+            
+            for language in target_languages:
+                language_results = await self.semantic_search(
+                    query=query,
+                    language=language,
+                    n_results=n_results,
+                    similarity_threshold=similarity_threshold
+                )
+                
+                if language_results:
+                    results[language] = language_results
+            
+            logger.info(f"Multi-language search completed for {len(results)} languages")
+            return results
+
+        except Exception as e:
+            logger.error(f"Failed to perform multi-language semantic search: {e}")
+            return {}
+
+    async def search_by_concept(
+        self,
+        concept: str,
+        n_results: int = 10,
+        similarity_threshold: float = 0.6
+    ) -> List[Dict[str, Any]]:
+        """
+        Search for content related to a specific concept, even if exact terms don't match.
+        
+        Args:
+            concept: Concept to search for
+            n_results: Number of results to return
+            similarity_threshold: Minimum similarity score
+            
+        Returns:
+            List of conceptually related content
+        """
+        try:
+            # Use a lower threshold for conceptual search
+            results = await self.semantic_search(
+                query=concept,
+                language="all",
+                n_results=n_results,
+                similarity_threshold=similarity_threshold
+            )
+            
+            # Filter for conceptual relevance
+            conceptual_results = []
+            for result in results:
+                # Additional filtering could be added here based on content analysis
+                conceptual_results.append(result)
+            
+            logger.info(f"Conceptual search found {len(conceptual_results)} related results")
+            return conceptual_results
+
+        except Exception as e:
+            logger.error(f"Failed to perform conceptual search: {e}")
+            return []
+
+    async def search_across_content_types(
+        self,
+        query: str,
+        content_types: List[str],
+        n_results: int = 10,
+        similarity_threshold: float = 0.7
+    ) -> Dict[str, List[Dict[str, Any]]]:
+        """
+        Search across specific content types.
+        
+        Args:
+            query: Search query
+            content_types: List of content types to search
+            n_results: Number of results per content type
+            similarity_threshold: Minimum similarity score
+            
+        Returns:
+            Dictionary with content type as key and results as value
+        """
+        try:
+            results = {}
+            
+            for content_type in content_types:
+                type_results = await self.semantic_search(
+                    query=query,
+                    content_types=[content_type],
+                    n_results=n_results,
+                    similarity_threshold=similarity_threshold
+                )
+                
+                if type_results:
+                    results[content_type] = type_results
+            
+            logger.info(f"Cross-content-type search completed for {len(results)} types")
+            return results
+
+        except Exception as e:
+            logger.error(f"Failed to perform cross-content-type search: {e}")
+            return {}
+
+    async def get_search_statistics(self) -> Dict[str, Any]:
+        """Get statistics about the search index."""
+        try:
+            stats = {
+                "total_documents": self.semantic_collection.count(),
+                "multilingual_documents": self.multilingual_collection.count(),
+                "languages": {},
+                "content_types": {},
+                "recent_activity": {}
+            }
+            
+            # Get sample documents for analysis
+            sample_results = self.semantic_collection.get(
+                limit=min(1000, self.semantic_collection.count())
+            )
+            
+            if sample_results["metadatas"]:
+                # Analyze languages
+                for metadata in sample_results["metadatas"]:
+                    lang = metadata.get("language", "unknown")
+                    stats["languages"][lang] = stats["languages"].get(lang, 0) + 1
+                    
+                    content_type = metadata.get("content_type", "unknown")
+                    stats["content_types"][content_type] = stats["content_types"].get(content_type, 0) + 1
+            
+            logger.info(f"Search statistics: {stats}")
+            return stats
+
+        except Exception as e:
+            logger.error(f"Failed to get search statistics: {e}")
+            return {}
 
     async def find_similar_content(
         self, 
@@ -536,6 +830,8 @@ class VectorDBManager:
             # Delete from all collections
             self.results_collection.delete(ids=[result_id])
             self.metadata_collection.delete(ids=[f"meta_{result_id}"])
+            self.semantic_collection.delete(ids=[f"semantic_{result_id}"])
+            self.multilingual_collection.delete(ids=[f"multilingual_{result_id}"])
 
             logger.info(f"Deleted result {result_id} from vector database")
             return True
@@ -571,7 +867,8 @@ class VectorDBManager:
 
             # Get collection info
             for collection_name in [
-                "sentiment_results", "aggregated_results", "result_metadata"
+                "sentiment_results", "aggregated_results", "result_metadata",
+                "semantic_search", "multilingual_search"
             ]:
                 try:
                     collection = self.client.get_collection(collection_name)

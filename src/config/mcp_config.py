@@ -76,15 +76,38 @@ class ConsolidatedServerConfig(BaseModel):
 
 
 class ConsolidatedMCPServerConfig(BaseModel):
-    """Configuration for the consolidated MCP server."""
+    """Configuration for the unified MCP server."""
     
     # Server settings
     host: str = Field(default="localhost", description="Server host")
-    port: int = Field(default=8001, description="Server port")
+    port: int = Field(default=8003, description="Server port (integrated with FastAPI)")
     debug: bool = Field(default=False, description="Enable debug mode")
     
     # Transport settings
-    transport: str = Field(default="streamable-http", description="Transport protocol")
+    transport: str = Field(
+        default="http", 
+        description="Transport protocol (HTTP for FastAPI integration)"
+    )
+    
+    # Unified server settings
+    server_name: str = Field(
+        default="unified_sentiment_mcp_server", 
+        description="Unified MCP server name"
+    )
+    server_version: str = Field(
+        default="1.0.0", 
+        description="Unified MCP server version"
+    )
+    
+    # FastAPI integration settings
+    fastapi_mount_path: str = Field(
+        default="/mcp", 
+        description="FastAPI mount path for MCP server"
+    )
+    fastapi_port: int = Field(
+        default=8003, 
+        description="FastAPI server port"
+    )
     
     # Consolidated server configurations
     pdf_server: ConsolidatedServerConfig = Field(

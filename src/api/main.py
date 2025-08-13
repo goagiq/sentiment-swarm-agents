@@ -4,6 +4,7 @@ FastAPI application for the sentiment analysis system.
 
 from contextlib import asynccontextmanager
 from typing import List, Optional, Dict, Any
+import time
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict
@@ -14,6 +15,8 @@ from src.core.models import (
     AnalysisRequest, AnalysisResult, ModelConfig
 )
 from src.config.config import config
+from src.mcp_servers.unified_mcp_server import create_unified_mcp_server
+from src.core.unified_mcp_client import call_unified_mcp_tool
 
 
 # Initialize orchestrator
@@ -96,6 +99,29 @@ class PDFRequest(BaseModel):
     model_preference: Optional[str] = None
     reflection_enabled: bool = True
     max_iterations: int = 3
+
+
+class SemanticSearchRequest(BaseModel):
+    query: str
+    search_type: str = "semantic"
+    language: str = "en"
+    content_types: Optional[List[str]] = None
+    n_results: int = 10
+    similarity_threshold: float = 0.7
+    include_metadata: bool = True
+
+
+class KnowledgeGraphSearchRequest(BaseModel):
+    query: str
+    language: str = "en"
+
+
+class CombinedSearchRequest(BaseModel):
+    query: str
+    language: str = "en"
+    n_results: int = 10
+    similarity_threshold: float = 0.7
+    include_kg_results: bool = True
     confidence_threshold: float = 0.8
 
 
@@ -282,12 +308,6 @@ class ScheduleReportRequest(BaseModel):
     start_date: str = None
 
 # Phase 5: Semantic Search & Agent Reflection Request Models
-class SemanticSearchRequest(BaseModel):
-    query: str
-    content_types: List[str] = ["text", "image", "audio", "video", "document"]
-    search_strategy: str = "accuracy"
-    include_agent_metadata: bool = True
-    combine_results: bool = True
 
 class QueryRoutingRequest(BaseModel):
     query: str
@@ -490,8 +510,7 @@ async def process_pdf_enhanced_multilingual(
     using language-specific patterns, dictionaries, and LLM-based extraction methods.
     """
     try:
-        # Import MCP client to call MCP tools
-        from src.core.mcp_client_wrapper import mcp_client
+        # Import unified MCP client to call MCP tools
         import os
         
         # Validate PDF file exists
@@ -501,17 +520,20 @@ async def process_pdf_enhanced_multilingual(
                 detail=f"PDF file not found: {pdf_path}"
             )
         
-        # Use MCP tool for processing
-        logger.info(f"📄 Processing PDF with MCP tools: {pdf_path}")
+        # Use unified MCP tool for processing
+        logger.info(f"📄 Processing PDF with unified MCP tools: {pdf_path}")
         
-        # Create MCP client and call the multilingual PDF processing tool
-        result = await mcp_client.call_tool(
-            "process_multilingual_pdf_mcp",
+        # Call the unified MCP tool for PDF processing
+        result = await call_unified_mcp_tool(
+            "process_content",
             {
-                "pdf_path": pdf_path,
+                "content": pdf_path,
+                "content_type": "pdf",
                 "language": language,
-                "generate_report": generate_report,
-                "output_path": output_path
+                "options": {
+                    "generate_report": generate_report,
+                    "output_path": output_path
+                }
             }
         )
         
@@ -571,8 +593,7 @@ async def process_multilingual_pdf(
     using language-specific patterns, dictionaries, and LLM-based extraction methods.
     """
     try:
-        # Import MCP client to call MCP tools
-        from src.core.mcp_client_wrapper import mcp_client
+        # Import unified MCP client to call MCP tools
         import os
         
         # Validate PDF file exists
@@ -582,18 +603,20 @@ async def process_multilingual_pdf(
                 detail=f"PDF file not found: {pdf_path}"
             )
         
-        # Use MCP tool for processing
-        logger.info(f"📄 Processing multilingual PDF with MCP tools: {pdf_path}")
+        # Use unified MCP tool for processing
+        logger.info(f"📄 Processing multilingual PDF with unified MCP tools: {pdf_path}")
         
-        # Create MCP client and call the multilingual PDF processing tool
-        mcp_client = StrandsMCPClient()
-        result = await mcp_client.call_tool(
-            "process_multilingual_pdf_mcp",
+        # Call the unified MCP tool for PDF processing
+        result = await call_unified_mcp_tool(
+            "process_content",
             {
-                "pdf_path": pdf_path,
+                "content": pdf_path,
+                "content_type": "pdf",
                 "language": language,
-                "generate_report": generate_report,
-                "output_path": output_path
+                "options": {
+                    "generate_report": generate_report,
+                    "output_path": output_path
+                }
             }
         )
         
@@ -1710,6 +1733,184 @@ async def validate_response_quality(request: ResponseValidationRequest):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Response validation failed: {str(e)}")
+
+
+# Semantic Search Endpoints
+@app.post("/search/semantic")
+async def semantic_search_endpoint(request: SemanticSearchRequest):
+    """Perform semantic search across all indexed content."""
+    try:
+        from src.core.semantic_search_service import SemanticSearchService
+        from src.config.semantic_search_config import SearchType
+        
+        logger.info(f"🔍 Performing semantic search: {request.query}")
+        
+        # Initialize the semantic search service
+        search_service = SemanticSearchService()
+        
+        # Convert search_type string to enum
+        search_type = SearchType.SEMANTIC
+        if request.search_type == "conceptual":
+            search_type = SearchType.CONCEPTUAL
+        elif request.search_type == "multilingual":
+            search_type = SearchType.MULTILINGUAL
+        elif request.search_type == "cross_content":
+            search_type = SearchType.CROSS_CONTENT
+        
+        # Perform the search
+        result = await search_service.search(
+            query=request.query,
+            search_type=search_type,
+            language=request.language,
+            content_types=request.content_types,
+            n_results=request.n_results,
+            similarity_threshold=request.similarity_threshold,
+            include_metadata=request.include_metadata
+        )
+        
+        return {"success": True, "result": result}
+    except Exception as e:
+        logger.error(f"Semantic search error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Semantic search failed: {str(e)}")
+
+
+@app.post("/search/knowledge-graph")
+async def knowledge_graph_search_endpoint(request: KnowledgeGraphSearchRequest):
+    """Perform knowledge graph search."""
+    try:
+        from src.core.vector_db import VectorDBManager
+        
+        logger.info(f"🧠 Performing knowledge graph search: {request.query}")
+        
+        # Initialize the vector database manager
+        vector_db = VectorDBManager()
+        
+        # Query the knowledge graph collection
+        result = await vector_db.query(
+            collection_name="knowledge_graph",
+            query_text=request.query,
+            n_results=10
+        )
+        
+        return {"success": True, "result": result}
+    except Exception as e:
+        logger.error(f"Knowledge graph search error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Knowledge graph search failed: {str(e)}")
+
+
+@app.post("/search/combined")
+async def combined_search_endpoint(request: CombinedSearchRequest):
+    """Perform combined semantic and knowledge graph search."""
+    try:
+        from src.core.semantic_search_service import SemanticSearchService
+        from src.core.vector_db import VectorDBManager
+        from src.config.semantic_search_config import SearchType
+        
+        logger.info(f"🔄 Performing combined search: {request.query}")
+        
+        # Initialize services
+        search_service = SemanticSearchService()
+        vector_db = VectorDBManager()
+        
+        # Perform semantic search
+        semantic_result = await search_service.search(
+            query=request.query,
+            search_type=SearchType.SEMANTIC,
+            language=request.language,
+            n_results=request.n_results,
+            similarity_threshold=request.similarity_threshold,
+            include_metadata=True
+        )
+        
+        # Perform knowledge graph search if requested
+        kg_result = None
+        if request.include_kg_results:
+            kg_result = await vector_db.query_knowledge_graph(
+                query=request.query,
+                query_type="semantic",
+                limit=10
+            )
+        
+        # Combine results
+        combined_result = {
+            "semantic_results": semantic_result,
+            "knowledge_graph_results": kg_result,
+            "query": request.query,
+            "timestamp": time.time()
+        }
+        
+        return {"success": True, "result": combined_result}
+    except Exception as e:
+        logger.error(f"Combined search error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Combined search failed: {str(e)}")
+
+
+@app.get("/search/statistics")
+async def search_statistics_endpoint():
+    """Get search statistics and index information."""
+    try:
+        from src.core.vector_db import VectorDBManager
+        
+        logger.info("📊 Getting search statistics")
+        
+        # Initialize the vector database manager
+        vector_db = VectorDBManager()
+        
+        # Get search statistics
+        result = await vector_db.get_search_statistics()
+        
+        return {"success": True, "result": result}
+    except Exception as e:
+        logger.error(f"Search statistics error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Getting search statistics failed: {str(e)}")
+
+
+class GraphReportRequest(BaseModel):
+    query: Optional[str] = None
+    language: str = "en"
+
+@app.post("/search/generate-graph-report")
+async def generate_graph_report_endpoint(request: GraphReportRequest = None):
+    """Generate an interactive HTML knowledge graph visualization."""
+    try:
+        from src.agents.knowledge_graph_agent import KnowledgeGraphAgent
+        
+        query = request.query if request else None
+        language = request.language if request else "en"
+        
+        if query:
+            logger.info(f"📊 Generating interactive knowledge graph visualization for query: {query}")
+        else:
+            logger.info("📊 Generating interactive knowledge graph visualization (full graph)")
+        
+        # Initialize the knowledge graph agent
+        kg_agent = KnowledgeGraphAgent()
+        
+        # Generate HTML report with optional query filtering
+        if query:
+            # Generate query-specific graph visualization
+            result = await kg_agent.generate_query_specific_graph_report(query, language)
+        else:
+            # Generate full graph visualization
+            result = await kg_agent.generate_graph_report()
+        
+        # Filter to only include HTML file in response
+        if result and "content" in result and result["content"]:
+            content = result["content"][0].get("json", {})
+            # Keep only HTML file reference
+            filtered_content = {
+                "message": content.get("message", "HTML visualization generated"),
+                "html_file": content.get("html_file"),
+                "target_language": content.get("target_language", "en"),
+                "graph_stats": content.get("graph_stats", {}),
+                "query": query
+            }
+            result["content"][0]["json"] = filtered_content
+        
+        return {"success": True, "result": result}
+    except Exception as e:
+        logger.error(f"Graph visualization generation error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Graph visualization generation failed: {str(e)}")
 
 
 # Root endpoint

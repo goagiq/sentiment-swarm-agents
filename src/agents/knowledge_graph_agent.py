@@ -1642,6 +1642,62 @@ Notes:
             # Return original results if translation fails
             return results
     
+    async def generate_query_specific_graph_report(self, query: str, target_language: str = "en") -> dict:
+        """Generate a query-specific visual graph report with multilingual support."""
+        try:
+            if self.graph.number_of_nodes() == 0:
+                return {
+                    "content": [{
+                        "json": {"message": "Graph is empty, no report generated"}
+                    }]
+                }
+            
+            # Filter graph based on query
+            filtered_graph = await self._filter_graph_by_query(query, target_language)
+            
+            if filtered_graph.number_of_nodes() == 0:
+                return {
+                    "content": [{
+                        "json": {"message": f"No nodes found matching query: {query}"}
+                    }]
+                }
+            
+            # Generate timestamp for file names
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            
+            # Create base output path with query identifier
+            query_safe = "".join(c for c in query if c.isalnum() or c in (' ', '-', '_')).rstrip()
+            query_safe = query_safe.replace(' ', '_')[:30]  # Limit length
+            report_filename = f"query_graph_{query_safe}_{timestamp}_{target_language}"
+            base_output_path = settings.paths.reports_dir / report_filename
+            
+            # Ensure Results directory exists
+            base_output_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Generate HTML report only
+            html_file = base_output_path.with_suffix('.html')
+            await self._generate_query_specific_html_report(html_file, filtered_graph, query, target_language)
+            
+            return {
+                "content": [{
+                    "json": {
+                        "message": f"Query-specific graph report generated for: {query}",
+                        "html_file": str(html_file),
+                        "target_language": target_language,
+                        "query": query,
+                        "graph_stats": self._get_graph_stats_for_subgraph(filtered_graph)
+                    }
+                }]
+            }
+            
+        except Exception as e:
+            logger.error(f"Query-specific graph report generation failed for query '{query}' in language {target_language}: {e}")
+            return {
+                "content": [{
+                    "json": {"error": f"Query-specific report generation failed: {str(e)}"}
+                }]
+            }
+
     async def generate_graph_report(self, output_path: Optional[str] = None, target_language: str = "en") -> dict:
         """Generate a visual graph report with multilingual support."""
         try:
@@ -1775,6 +1831,194 @@ Notes:
         plt.savefig(output_file, dpi=300, bbox_inches='tight')
         plt.close()
     
+    async def _filter_graph_by_query(self, query: str, target_language: str = "en") -> nx.Graph:
+        """Filter the graph to include only nodes and edges related to the query."""
+        try:
+            # Create a subgraph with nodes that match the query
+            matching_nodes = set()
+            
+            # Search for nodes that contain the query terms
+            query_terms = query.lower().split()
+            
+            # First, try to find nodes that directly match the query
+            for node, attrs in self.graph.nodes(data=True):
+                node_text = node.lower()
+                node_original = attrs.get('original_text', '').lower()
+                
+                # Check if any query term matches the node
+                for term in query_terms:
+                    if term in node_text or term in node_original:
+                        matching_nodes.add(node)
+                        break
+                
+                # Also check node attributes for matches
+                node_type = attrs.get('type', '').lower()
+                domain = attrs.get('domain', '').lower()
+                
+                for term in query_terms:
+                    if term in node_type or term in domain:
+                        matching_nodes.add(node)
+                        break
+            
+            # If no direct matches found, try semantic search approach
+            if not matching_nodes:
+                logger.info(f"No direct matches found for query: {query}, trying semantic search...")
+                
+                # Get a sample of nodes to search through
+                all_nodes = list(self.graph.nodes(data=True))
+                sample_size = min(100, len(all_nodes))  # Limit to first 100 nodes for performance
+                
+                for node, attrs in all_nodes[:sample_size]:
+                    node_text = node.lower()
+                    
+                    # Check for partial matches and related terms
+                    for term in query_terms:
+                        # Check for partial word matches
+                        if any(term in word for word in node_text.split()):
+                            matching_nodes.add(node)
+                            break
+                        
+                        # Check for similar concepts
+                        if term in ['resource', 'planning', 'war', 'strategy', 'military']:
+                            if any(related in node_text for related in ['resource', 'plan', 'war', 'strategy', 'military', 'battle', 'victory']):
+                                matching_nodes.add(node)
+                                break
+            
+            # Include neighboring nodes (1-hop neighbors) for context
+            neighbors = set()
+            for node in matching_nodes:
+                neighbors.update(self.graph.neighbors(node))
+            
+            # Combine matching nodes and their neighbors
+            all_relevant_nodes = matching_nodes.union(neighbors)
+            
+            # If still no matches, return a small sample of the graph for demonstration
+            if not all_relevant_nodes:
+                logger.warning(f"No nodes found matching query: {query}, returning sample graph")
+                sample_nodes = list(self.graph.nodes())[:20]  # Return first 20 nodes
+                all_relevant_nodes = set(sample_nodes)
+            
+            # Create subgraph
+            if all_relevant_nodes:
+                subgraph = self.graph.subgraph(all_relevant_nodes).copy()
+                logger.info(f"Filtered graph: {len(matching_nodes)} matching nodes, {len(all_relevant_nodes)} total nodes")
+                return subgraph
+            else:
+                logger.warning(f"No nodes found matching query: {query}")
+                return nx.Graph()
+                
+        except Exception as e:
+            logger.error(f"Error filtering graph by query '{query}': {e}")
+            return nx.Graph()
+
+    def _get_graph_stats_for_subgraph(self, subgraph: nx.Graph) -> dict:
+        """Get statistics for a subgraph."""
+        try:
+            if subgraph.number_of_nodes() == 0:
+                return {"nodes": 0, "edges": 0, "density": 0}
+            
+            density = nx.density(subgraph)
+            return {
+                "nodes": subgraph.number_of_nodes(),
+                "edges": subgraph.number_of_edges(),
+                "density": density
+            }
+        except Exception as e:
+            logger.error(f"Error getting subgraph stats: {e}")
+            return {"nodes": 0, "edges": 0, "density": 0}
+
+    async def _generate_query_specific_html_report(self, output_file: Path, subgraph: nx.Graph, query: str, target_language: str = "en"):
+        """Generate query-specific HTML visualization of the filtered graph."""
+        # Prepare graph data for D3.js with language support
+        nodes_data = []
+        edges_data = []
+        
+        # Process nodes with enhanced metadata and language support
+        for node, attrs in subgraph.nodes(data=True):
+            node_type = attrs.get('type', 'unknown')
+            confidence = attrs.get('confidence', 0.5)
+            domain = attrs.get('domain', 'general')
+            language = attrs.get('language', 'en')
+            original_text = attrs.get('original_text', node)
+            
+            # Enhanced group assignment based on entity type (case-insensitive)
+            group = 0  # Default - Concepts
+            node_type_lower = node_type.lower()
+            
+            if node_type_lower in ['person', 'people']:
+                group = 0  # Red - People
+            elif node_type_lower in ['organization', 'company', 'government', 'administration']:
+                group = 1  # Blue - Organizations
+            elif node_type_lower in ['location', 'country', 'city', 'place']:
+                group = 2  # Orange - Locations
+            elif node_type_lower in ['concept', 'topic', 'theme', 'method', 'technology', 'linguistic_term']:
+                group = 3  # Green - Concepts
+            elif node_type_lower in ['object', 'process', 'event', 'action', 'lesson', 'work']:
+                group = 4  # Purple - Objects/Processes
+            
+            # Prepare multilingual labels
+            display_label = node
+            if language != target_language and target_language != "en":
+                # Try to translate the label if needed
+                try:
+                    translation_result = await self.translation_service.translate_text(
+                        node, target_language=target_language
+                    )
+                    display_label = translation_result.translated_text
+                except Exception as e:
+                    logger.warning(f"Failed to translate node label '{node}': {e}")
+                    display_label = node
+            
+            nodes_data.append({
+                'id': node,
+                'label': display_label,
+                'original_label': node,
+                'language': language,
+                'group': group,
+                'size': max(15, int(confidence * 30)),
+                'type': node_type,
+                'domain': domain,
+                'confidence': confidence,
+                'original_text': original_text
+            })
+        
+        # Process edges with enhanced metadata and language support
+        for source, target, attrs in subgraph.edges(data=True):
+            rel_type = attrs.get('relationship_type', 'related')
+            confidence = attrs.get('confidence', 0.5)
+            language = attrs.get('language', 'en')
+            
+            # Prepare multilingual relationship labels
+            display_rel_type = rel_type
+            if language != target_language and target_language != "en":
+                # Try to translate the relationship type if needed
+                try:
+                    translation_result = await self.translation_service.translate_text(
+                        rel_type, target_language=target_language
+                    )
+                    display_rel_type = translation_result.translated_text
+                except Exception as e:
+                    logger.warning(f"Failed to translate relationship type '{rel_type}': {e}")
+                    display_rel_type = rel_type
+            
+            edges_data.append({
+                'source': source,
+                'target': target,
+                'value': max(1, int(confidence * 5)),
+                'label': display_rel_type,
+                'original_label': rel_type,
+                'type': rel_type,
+                'language': language,
+                'confidence': confidence
+            })
+        
+        # Create enhanced HTML content with query-specific title
+        html_content = self._create_query_specific_html_template(nodes_data, edges_data, query, target_language)
+        
+        # Write HTML file
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+
     async def _generate_html_report(self, output_file: Path, target_language: str = "en"):
         """Generate enhanced interactive HTML visualization of the graph with multilingual support."""
         # Prepare graph data for D3.js with language support
@@ -2149,6 +2393,27 @@ Notes:
             with open(output_file, 'w', encoding='utf-8') as f:
                 f.write(basic_content)
     
+    def _create_query_specific_html_template(self, nodes_data, edges_data, query: str, target_language: str = "en"):
+        """Create enhanced HTML template for query-specific graph visualization."""
+        # Use the same template as the full graph but with query-specific title
+        html_template = self._create_enhanced_html_template(nodes_data, edges_data, target_language)
+        
+        # Replace the title to indicate it's query-specific
+        query_title = f"Query: {query}"
+        html_template = html_template.replace(
+            "Enhanced Knowledge Graph Visualization - Multilingual",
+            f"Query-Specific Graph: {query}"
+        )
+        
+        # Add query information to the header
+        query_info = f'<p style="margin: 5px 0 0 0; font-size: 1.0em; opacity: 0.8;">Filtered by: "{query}"</p>'
+        html_template = html_template.replace(
+            '<p style="margin: 10px 0 0 0; font-size: 1.1em; opacity: 0.9;">Interactive knowledge graph visualization with multilingual support</p>',
+            f'<p style="margin: 10px 0 0 0; font-size: 1.1em; opacity: 0.9;">Interactive knowledge graph visualization filtered by query</p>{query_info}'
+        )
+        
+        return html_template
+
     def _create_enhanced_html_template(self, nodes_data, edges_data, target_language: str = "en"):
         """Create enhanced HTML template with D3.js visualization and multilingual support."""
         import json

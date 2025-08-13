@@ -22,6 +22,7 @@ from src.core.models import (
 )
 from src.core.model_manager import ModelManager
 from src.core.duplicate_detection_service import DuplicateDetectionService
+from src.core.unified_mcp_client import call_unified_mcp_tool
 
 
 class SentimentOrchestrator:
@@ -160,13 +161,45 @@ class SentimentOrchestrator:
         return await self.analyze(request)
 
     async def analyze_pdf(self, pdf_path: str, **kwargs) -> AnalysisResult:
-        """Analyze PDF content and extract text."""
-        request = AnalysisRequest(
-            data_type=DataType.PDF,
-            content=pdf_path,
-            **kwargs
-        )
-        return await self.analyze(request)
+        """Analyze PDF content and extract text using unified MCP tools."""
+        try:
+            # Use unified MCP tool for PDF processing
+            result = await call_unified_mcp_tool(
+                "process_content",
+                {
+                    "content": pdf_path,
+                    "content_type": "pdf",
+                    "language": kwargs.get("language", "auto"),
+                    "options": kwargs
+                }
+            )
+            
+            if result.get("success", False):
+                return AnalysisResult(
+                    request_id=f"mcp_pdf_{hash(pdf_path)}",
+                    data_type=DataType.PDF,
+                    content=pdf_path,
+                    result=result.get("result", {}),
+                    success=True,
+                    processing_time=result.get("processing_time", 0)
+                )
+            else:
+                return AnalysisResult(
+                    request_id=f"mcp_pdf_{hash(pdf_path)}",
+                    data_type=DataType.PDF,
+                    content=pdf_path,
+                    error=result.get("error", "PDF processing failed"),
+                    success=False
+                )
+        except Exception as e:
+            logger.error(f"Error in MCP PDF analysis: {e}")
+            return AnalysisResult(
+                request_id=f"mcp_pdf_{hash(pdf_path)}",
+                data_type=DataType.PDF,
+                content=pdf_path,
+                error=str(e),
+                success=False
+            )
 
     async def analyze(self, request: AnalysisRequest) -> AnalysisResult:
         """Analyze content using the appropriate agent."""

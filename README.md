@@ -2,6 +2,590 @@
 
 A consolidated and optimized sentiment analysis system with unified agents for text, audio, video, and image analysis. The system has been streamlined to use three comprehensive unified agents that replace multiple specialized implementations.
 
+## 🆕 **Latest Updates - Interactive Knowledge Graph & Semantic Search**
+
+### ✨ **New Features Added:**
+
+#### **🎯 Interactive Knowledge Graph Visualization**
+- **Full-width interactive HTML graphs** with zoom, pan, and click functionality
+- **Query-specific graph filtering** based on user input
+- **Real-time graph statistics** (nodes, edges, density)
+- **Working download functionality** for HTML files
+- **Scrollable interface** for large graphs
+
+#### **🔍 Enhanced Semantic Search System**
+- **Vector-based semantic search** across all content types
+- **Multilingual semantic search** with automatic translation
+- **Conceptual search** for finding related content
+- **Cross-content type search** (PDFs, web pages, audio, video)
+- **Combined search** integrating semantic and knowledge graph results
+
+#### **📊 Streamlit UI Improvements**
+- **Separated text search and visual graph generation**
+- **Clear button labeling** and user instructions
+- **Automatic graph generation** with smart filtering
+- **Full-width graph display** with scroll bars
+- **Working download buttons** for all generated content
+
+### 🚀 **Quick Start - New Features:**
+
+1. **Navigate to**: `http://localhost:8501` → **"Semantic Search"** → **"🌐 Knowledge Graph"**
+
+2. **Text Search**: Use "🔍 Search Knowledge Graph" for text results
+
+3. **Visual Graphs**: Use "🎯 Generate Filtered Graph" for interactive visualizations
+
+4. **Full Graph**: Use "📊 Generate Full Graph" for complete knowledge base visualization
+
+## 🏗️ Design Document & Architecture Framework
+
+### System Purpose
+The Sentiment Analysis Swarm is a comprehensive AI-powered system for processing and analyzing content across multiple languages and modalities (text, audio, video, images, PDFs) using an agent swarm architecture with MCP (Model Context Protocol) framework integration.
+
+### Core Architecture Pattern
+- **Agent Swarm Architecture**: Multiple specialized agents working together
+- **MCP Framework Integration**: All operations go through MCP tools
+- **Multilingual Processing**: Language-specific configurations and processing
+- **Microservices**: Modular, scalable component design
+- **Event-Driven**: Asynchronous processing with proper error handling
+
+### High-Level Architecture
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Client Layer                              │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
+│  │   Web UI    │  │   API       │  │   MCP       │         │
+│  │             │  │   Client    │  │   Client    │         │
+│  └─────────────┘  └─────────────┘  └─────────────┘         │
+└─────────────────────────────────────────────────────────────┘
+                              │
+┌─────────────────────────────────────────────────────────────┐
+│                    API Gateway Layer                        │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
+│  │ FastAPI     │  │ MCP Server  │  │ Orchestrator│         │
+│  │ Endpoints   │  │ Tools       │  │             │         │
+│  └─────────────┘  └─────────────┘  └─────────────┘         │
+└─────────────────────────────────────────────────────────────┘
+                              │
+┌─────────────────────────────────────────────────────────────┐
+│                    Agent Swarm Layer                        │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
+│  │ Text Agent  │  │ Vision Agent│  │ Audio Agent │         │
+│  └─────────────┘  └─────────────┘  └─────────────┘         │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
+│  │ File Agent  │  │ Knowledge   │  │ Web Agent   │         │
+│  │             │  │ Graph Agent │  │             │         │
+│  └─────────────┘  └─────────────┘  └─────────────┘         │
+└─────────────────────────────────────────────────────────────┘
+                              │
+┌─────────────────────────────────────────────────────────────┐
+│                    Core Services Layer                       │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
+│  │ Vector DB   │  │ Translation │  │ Model       │         │
+│  │ Manager     │  │ Service     │  │ Manager     │         │
+│  └─────────────┘  └─────────────┘  └─────────────┘         │
+└─────────────────────────────────────────────────────────────┘
+                              │
+┌─────────────────────────────────────────────────────────────┐
+│                    Configuration Layer                       │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
+│  │ Language    │  │ Model       │  │ System      │         │
+│  │ Configs     │  │ Configs     │  │ Settings    │         │
+│  └─────────────┘  └─────────────┘  └─────────────┘         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Core Design Principles
+
+#### 1. MCP-First Architecture
+- **All operations must go through MCP tools**
+- **No direct API access to agents or services**
+- **Unified interface for all functionality**
+- **Consistent tool definitions and error handling**
+- **Single unified MCP server with consolidated tools**
+- **FastAPI + MCP integration pattern**
+
+#### 2. Multilingual Support
+- **Language-agnostic processing pipeline**
+- **Language-specific configurations stored in config files**
+- **Automatic language detection**
+- **Cultural and linguistic context awareness**
+
+#### 3. Agent Swarm Coordination
+- **Specialized agents for specific tasks**
+- **Orchestrator for request routing and coordination**
+- **Load balancing and failover capabilities**
+- **Agent health monitoring and recovery**
+
+#### 4. Configuration-Driven Development
+- **All language-specific parameters in config files**
+- **Dynamic configuration loading**
+- **Environment-specific settings**
+- **Hot-reload capability for non-critical changes**
+
+#### 5. Error Resilience
+- **Graceful degradation on failures**
+- **Comprehensive error handling and logging**
+- **Retry mechanisms with exponential backoff**
+- **Circuit breaker patterns for external dependencies**
+
+#### 6. Performance Optimization
+- **Asynchronous processing throughout**
+- **Caching at multiple levels**
+- **Resource pooling and connection reuse**
+- **Monitoring and metrics collection**
+- **Tool consolidation for reduced overhead**
+- **Unified server architecture for better resource utilization**
+
+### Technology Stack
+
+#### Core Technologies
+- **Python 3.11+**: Primary development language
+- **FastAPI**: Web framework for API endpoints
+- **FastMCP**: MCP framework implementation
+- **Ollama**: Local LLM inference engine
+- **ChromaDB**: Vector database for embeddings
+- **NetworkX**: Knowledge graph management
+- **PyPDF2**: PDF text extraction
+
+#### Development Tools
+- **Poetry/Virtual Environment**: Dependency management
+- **Pytest**: Testing framework
+- **Loguru**: Structured logging
+- **Pydantic**: Data validation and serialization
+- **Uvicorn**: ASGI server
+
+#### Infrastructure
+- **Docker**: Containerization (when needed)
+- **Git**: Version control
+- **GitHub Actions**: CI/CD (when implemented)
+
+### Component Architecture
+
+#### 1. Main Entry Point (`main.py`)
+- **Unified MCP server initialization and management**
+- **FastAPI + MCP integration**
+- **Agent swarm coordination**
+- **Tool registration and routing**
+- **System health monitoring**
+- **Process management for Windows environment**
+
+#### 2. Orchestrator (`src/core/orchestrator.py`)
+- **Request routing to appropriate agents**
+- **Load balancing and failover**
+- **Result aggregation and caching**
+- **Agent health monitoring**
+
+#### 3. Agent Base Class (`src/agents/base_agent.py`)
+- **Common agent functionality**
+- **MCP tool integration**
+- **Error handling and logging**
+- **Performance monitoring**
+
+#### 4. Language Configuration System (`src/config/language_config/`)
+- **Language-specific parameter management**
+- **Entity pattern definitions**
+- **Processing settings**
+- **Model configurations**
+
+### Dual MCP Server Architecture
+
+The system implements a dual MCP server architecture to support both FastAPI integration and standalone Strands integration:
+
+1. **Unified MCP Server** (Port 8003): Integrated with FastAPI for web access
+2. **Standalone MCP Server** (Port 8000): Dedicated server for Strands integration with Streamable HTTP transport
+
+#### Server Endpoints
+- **FastAPI Server**: http://localhost:8003
+- **MCP Server (FastAPI Integrated)**: http://localhost:8003/mcp
+- **Standalone MCP Server**: http://localhost:8000 (Strands integration)
+- **API Documentation**: http://localhost:8003/docs
+
+#### Strands Integration
+For Strands integration, use the standalone MCP server:
+```python
+from mcp.client.streamable_http import streamablehttp_client
+from strands import Agent
+from strands.tools.mcp.mcp_client import MCPClient
+
+# Create MCP client with Streamable HTTP transport
+streamable_http_mcp_client = MCPClient(
+    lambda: streamablehttp_client("http://localhost:8000/mcp")
+)
+
+# Create an agent with MCP tools
+with streamable_http_mcp_client:
+    tools = streamable_http_mcp_client.list_tools_sync()
+    agent = Agent(tools=tools)
+```
+
+### MCP Implementation Patterns
+
+#### Tool Consolidation Strategy
+1. **Identify Duplicate Functionality**: Map all existing tools and identify overlapping capabilities
+2. **Create Unified Interfaces**: Standardize parameter patterns and return formats across all tools
+3. **Implement Content Type Detection**: Auto-detect content type for intelligent routing
+4. **Maintain Backward Compatibility**: Ensure existing functionality is preserved during consolidation
+5. **Achieve Target Reduction**: Aim for 70%+ reduction in tool count while maintaining all features
+
+#### FastMCP Integration Best Practices
+1. **Correct Constructor Usage**: FastMCP(name, version) - no 'description' parameter
+2. **HTTP App Integration**: Use `mcp.http_app(path="/mcp")` for FastAPI integration
+3. **Streamable HTTP Transport**: Use proper headers (`text/event-stream, application/json`) for Strands integration
+4. **Proper Error Handling**: Implement comprehensive try-catch blocks with logging
+5. **Process Management**: Use Windows-specific process termination commands
+
+#### Strands Integration Best Practices
+1. **Standalone Server**: Dedicated MCP server on port 8000 for Strands integration
+2. **Streamable HTTP Transport**: Use `text/event-stream, application/json` headers
+3. **Proper Client Pattern**: Use `streamablehttp_client("http://localhost:8000/mcp")` for Strands
+4. **Tool Availability**: All 25 consolidated tools available through Strands integration
+5. **Error Handling**: Proper handling of 400/406 errors for non-Strands clients
+
+### Multilingual Processing Framework
+
+#### Language Configuration Factory
+```python
+class LanguageConfigFactory:
+    @classmethod
+    def get_config(cls, language_code: str) -> BaseLanguageConfig:
+        # Return language-specific configuration
+    
+    @classmethod
+    def detect_language_from_text(cls, text: str) -> str:
+        # Automatic language detection
+```
+
+#### Supported Languages
+- **Chinese (zh)**: Modern and Classical Chinese
+- **Russian (ru)**: Cyrillic text processing
+- **English (en)**: Standard English processing
+- **Japanese (ja)**: Japanese with Kanji support
+- **Korean (ko)**: Korean text processing
+- **Arabic (ar)**: Arabic with RTL support
+- **Hindi (hi)**: Hindi text processing
+
+#### Language-Specific Features
+Each language configuration must include:
+- **Entity Patterns**: Regex patterns for entity extraction
+- **Processing Settings**: Language-specific parameters
+- **Ollama Models**: Appropriate model configurations
+- **Grammar Patterns**: Language-specific structures
+- **Detection Patterns**: Language identification patterns
+
+#### Processing Pipeline
+1. **Language Detection**: Automatic detection from content
+2. **Configuration Loading**: Load language-specific settings
+3. **Entity Extraction**: Use language-appropriate patterns
+4. **Knowledge Graph Processing**: Apply language-specific rules
+5. **Result Generation**: Format results appropriately
+
+### 🎯 **Interactive Knowledge Graph & Semantic Search System**
+
+#### **Knowledge Graph Features**
+- **Interactive HTML Visualizations**: Full-width, scrollable graphs with zoom/pan
+- **Query-Specific Filtering**: Automatically filter graphs based on user queries
+- **Real-time Statistics**: Live node/edge counts and graph density metrics
+- **Download Functionality**: Working download buttons for all generated content
+- **Multilingual Support**: Graph generation in 7 supported languages
+
+#### **Semantic Search Capabilities**
+- **Vector-Based Search**: ChromaDB-powered semantic similarity search
+- **Cross-Content Search**: Search across PDFs, web pages, audio, video, and text
+- **Conceptual Matching**: Find related content even without exact term matches
+- **Multilingual Search**: Automatic translation and search across languages
+- **Combined Results**: Integrate semantic search with knowledge graph queries
+
+#### **Streamlit UI Components**
+```
+🌐 Knowledge Graph Tab:
+├── 🔍 Text Search Section
+│   ├── Search Query Input
+│   ├── Language Selector
+│   └── "Search Knowledge Graph" Button
+├── 🎯 Visual Graph Section
+│   ├── Graph Query Input (optional)
+│   ├── "Generate Filtered Graph" Button
+│   └── "Generate Full Graph" Button
+└── 📊 Results Display
+    ├── Graph Statistics
+    ├── Interactive HTML Visualization
+    └── Download Button
+```
+
+#### **API Endpoints**
+- `POST /search/semantic` - Semantic search across all content
+- `POST /search/knowledge-graph` - Knowledge graph text search
+- `POST /search/combined` - Combined semantic + knowledge graph search
+- `POST /search/generate-graph-report` - Generate interactive visualizations
+- `GET /search/statistics` - Get search system statistics
+
+### Testing Framework
+
+#### Test Organization
+```
+Test/
+├── unit/                    # Unit tests
+├── integration/             # Integration tests
+├── performance/             # Performance tests
+├── multilingual/            # Multilingual-specific tests
+└── semantic_search/         # Semantic search tests
+```
+
+#### Test Categories
+1. **Configuration Tests**: Language config validation
+2. **Component Tests**: Individual component testing
+3. **Integration Tests**: End-to-end workflow testing
+4. **MCP Tests**: MCP tool functionality testing
+5. **Multilingual Tests**: Language-specific processing testing
+6. **Semantic Search Tests**: Vector search and graph generation testing
+
+#### Test Execution Pattern
+```python
+# Use .venv/Scripts/python.exe for all test execution
+.venv/Scripts/python.exe Test/test_name.py
+
+# Test results should be stored in Results/ directory
+# Test reports should include performance metrics
+
+# MCP-specific testing
+# Test unified MCP server functionality
+.venv/Scripts/python.exe Test/test_unified_mcp_server.py
+
+# Test FastAPI + MCP integration
+curl http://localhost:8003/mcp
+
+# Test individual MCP tools
+.venv/Scripts/python.exe Test/test_mcp_tools.py
+```
+
+#### Test Requirements
+- [ ] All components must have unit tests
+- [ ] Integration tests for all workflows
+- [ ] Multilingual processing tests
+- [ ] MCP tool functionality tests (25 unified tools)
+- [ ] Performance benchmarks
+- [ ] Error handling validation
+- [ ] FastAPI + MCP integration tests
+- [ ] Unified MCP server functionality tests
+- [ ] Windows process management tests
+- [ ] Asyncio thread conflict resolution tests
+
+### File Organization Standards
+
+#### Directory Structure
+```
+project_root/
+├── main.py                  # Main entry point
+├── src/                     # Source code
+│   ├── agents/             # Agent implementations
+│   ├── api/                # API endpoints
+│   ├── core/               # Core services
+│   ├── config/             # Configuration files
+│   └── mcp_servers/        # MCP server implementations
+├── Test/                   # Test scripts
+├── Results/                # Test results and reports
+├── data/                   # Test data and samples
+├── .venv/                  # Virtual environment
+└── docs/                   # Documentation
+```
+
+#### Naming Conventions
+- **Files**: snake_case.py
+- **Classes**: PascalCase
+- **Functions**: snake_case
+- **Constants**: UPPER_SNAKE_CASE
+- **Variables**: snake_case
+
+#### Import Organization
+```python
+# Standard library imports
+import os
+import sys
+from pathlib import Path
+
+# Third-party imports
+from fastapi import FastAPI
+from loguru import logger
+
+# Local imports
+from src.core.models import AnalysisRequest
+from src.agents.base_agent import StrandsBaseAgent
+```
+
+### Coding Standards
+
+#### Python Style Guide
+- **PEP 8**: Primary style guide
+- **Type Hints**: Required for all function signatures
+- **Docstrings**: Required for all classes and functions
+- **Error Handling**: Comprehensive exception handling
+
+#### Code Quality Requirements
+```python
+# Required imports for all files
+from typing import Dict, List, Optional, Any
+from loguru import logger
+
+# Required error handling pattern
+@with_error_handling("component_name")
+async def function_name(param: str) -> Dict[str, Any]:
+    """Function documentation."""
+    try:
+        # Implementation
+        return {"success": True, "result": result}
+    except Exception as e:
+        logger.error(f"Error in function_name: {e}")
+        return {"success": False, "error": str(e)}
+```
+
+#### Async/Await Usage
+- **All I/O operations must be async**
+- **Use asyncio.gather() for parallel operations**
+- **Proper exception handling in async contexts**
+- **Avoid blocking operations in async functions**
+
+#### Logging Standards
+```python
+# Use structured logging with loguru
+logger.info("Operation started", extra={"component": "agent_name"})
+logger.error("Operation failed", extra={"error": str(e), "component": "agent_name"})
+logger.debug("Debug information", extra={"data": debug_data})
+```
+
+### Integration Patterns
+
+#### Agent Integration Pattern
+```python
+class SpecializedAgent(StrandsBaseAgent):
+    def __init__(self):
+        super().__init__()
+        self.agent_id = f"{self.__class__.__name__}_{self._generate_id()}"
+    
+    async def process(self, request: AnalysisRequest) -> AnalysisResult:
+        # Validate request
+        # Process with language-specific configuration
+        # Return standardized result
+```
+
+#### MCP Tool Integration Pattern (Unified Interface)
+```python
+@self.mcp.tool(description="Unified tool description")
+async def tool_name(
+    content: str,
+    content_type: str = "auto",
+    language: str = "en",
+    options: Dict[str, Any] = None
+) -> Dict[str, Any]:
+    """Unified tool implementation with consistent interface."""
+    try:
+        # Auto-detect content type if not specified
+        if content_type == "auto":
+            content_type = self._detect_content_type(content)
+        
+        # Route to appropriate agent based on content type
+        if content_type in ["text", "pdf"]:
+            result = await self.text_agent.process_content(content, language, options)
+        elif content_type in ["audio", "video"]:
+            result = await self.audio_agent.process_content(content, language, options)
+        elif content_type in ["image", "vision"]:
+            result = await self.vision_agent.process_content(content, language, options)
+        else:
+            result = await self.text_agent.process_content(content, language, options)
+        
+        return {"success": True, "result": result}
+    except Exception as e:
+        logger.error(f"Error in tool_name: {e}")
+        return {"success": False, "error": str(e)}
+```
+
+#### **New Semantic Search MCP Tools**
+```python
+# Semantic Search Tools
+@self.mcp.tool(description="Perform semantic search across all content types")
+async def semantic_search(
+    query: str,
+    language: str = "en",
+    n_results: int = 10,
+    similarity_threshold: float = 0.7
+) -> Dict[str, Any]:
+    """Semantic search using vector embeddings."""
+    return await self.semantic_search_service.search(query, language, n_results, similarity_threshold)
+
+@self.mcp.tool(description="Multilingual semantic search with automatic translation")
+async def multilingual_semantic_search(
+    query: str,
+    source_language: str = "en",
+    target_languages: List[str] = None,
+    n_results: int = 10
+) -> Dict[str, Any]:
+    """Search across multiple languages."""
+    return await self.semantic_search_service.multi_language_search(query, source_language, target_languages, n_results)
+
+@self.mcp.tool(description="Conceptual search for finding related content")
+async def conceptual_search(
+    concept: str,
+    language: str = "en",
+    n_results: int = 10
+) -> Dict[str, Any]:
+    """Search for conceptually related content."""
+    return await self.semantic_search_service.search_by_concept(concept, language, n_results)
+
+@self.mcp.tool(description="Cross-content type semantic search")
+async def cross_content_search(
+    query: str,
+    content_types: List[str] = None,
+    language: str = "en",
+    n_results: int = 10
+) -> Dict[str, Any]:
+    """Search across specific content types."""
+    return await self.semantic_search_service.search_across_content_types(query, content_types, language, n_results)
+
+@self.mcp.tool(description="Combined semantic and knowledge graph search")
+async def combined_search(
+    query: str,
+    language: str = "en",
+    n_results: int = 10
+) -> Dict[str, Any]:
+    """Combine semantic search with knowledge graph results."""
+    return await self.semantic_search_service.search_with_knowledge_graph(query, language, n_results)
+```
+
+#### Configuration Integration Pattern
+```python
+# Always use factory pattern for configuration
+config = LanguageConfigFactory.get_config(language_code)
+
+# Access configuration through methods
+patterns = config.get_entity_patterns()
+settings = config.get_processing_settings()
+```
+
+## MCP Tools Consolidation
+
+This project has been successfully consolidated to use a unified MCP server with 30 tools:
+
+### Tool Categories:
+1. **Content Processing** (5 tools): process_content, extract_text_from_content, summarize_content, translate_content, convert_content_format
+2. **Analysis & Intelligence** (5 tools): analyze_sentiment, extract_entities, generate_knowledge_graph, analyze_business_intelligence, create_visualizations
+3. **Semantic Search** (5 tools): semantic_search, multilingual_semantic_search, conceptual_search, cross_content_search, combined_search
+4. **Agent Management** (3 tools): get_agent_status, start_agents, stop_agents
+5. **Data Management** (4 tools): store_in_vector_db, query_knowledge_graph, export_data, manage_data_sources
+6. **Reporting & Export** (4 tools): generate_report, create_dashboard, export_results, schedule_reports
+7. **System Management** (4 tools): get_system_status, configure_system, monitor_performance, manage_configurations
+
+### Benefits:
+- **65% reduction** in tool count (from 85+ to 30 tools)
+- **Unified interface** for all tools
+- **Consistent error handling** and logging
+- **Improved performance** and maintainability
+- **Single MCP server** instance
+
+### Access:
+- **API Server**: http://localhost:8003
+- **MCP Endpoint**: http://localhost:8003/mcp
+- **API Documentation**: http://localhost:8003/docs
+
 ## 🚀 Key Features
 
 - **Unified Agents**: Three comprehensive agents replace 10+ specialized implementations
@@ -12,6 +596,8 @@ A consolidated and optimized sentiment analysis system with unified agents for t
 - **Advanced Audio Processing**: Transcription, summarization, and large file support
 - **Comprehensive Vision Analysis**: OCR, object detection, and scene understanding
 - **YouTube Integration**: Comprehensive video analysis with parallel processing
+- **Interactive Knowledge Graph**: Full-width HTML visualizations with zoom/pan and query-specific filtering
+- **Semantic Search System**: Vector-based search across all content types with multilingual support
 - **Knowledge Graph**: Entity extraction and relationship mapping with enhanced categorization
 - **Translation Services**: Multi-language content translation and analysis
 - **PDF Processing**: Advanced PDF text extraction with PyPDF2 and vision OCR
@@ -1002,8 +1588,36 @@ For support and questions:
 - Open an issue on GitHub
 - Check the troubleshooting guide in `docs/TROUBLESHOOTING.md`
 
+### Compliance Checklist
+
+#### Before Any Implementation
+- [ ] Review this design framework
+- [ ] Ensure MCP compliance (unified server architecture)
+- [ ] Follow multilingual patterns
+- [ ] Implement proper error handling
+- [ ] Add comprehensive tests
+- [ ] Update documentation
+- [ ] Verify FastMCP integration patterns
+- [ ] Test Windows process management
+- [ ] Validate asyncio thread handling
+
+#### Before Deployment
+- [ ] All tests passing
+- [ ] Performance benchmarks met
+- [ ] Security review completed
+- [ ] Documentation updated
+- [ ] Configuration validated
+- [ ] Monitoring in place
+- [ ] MCP server integration verified
+- [ ] 25 unified tools functionality confirmed
+- [ ] FastAPI + MCP integration tested
+- [ ] Windows process management validated
+
 ## 🔄 Recent Updates
 
+- **Design Framework Integration**: Added comprehensive Design Document and Architecture Framework to README
+- **Dual MCP Server Architecture**: Implemented both unified and standalone servers for maximum compatibility
+- **Strands Integration**: Complete support for Strands integration with Streamable HTTP transport
 - **Codebase Cleanup**: Complete reorganization of file structure for improved maintainability
 - **Enhanced Knowledge Graph Integration**: Fully integrated enhanced knowledge graph functionality
 - **Production Deployment**: Added Docker, Kubernetes, and monitoring support

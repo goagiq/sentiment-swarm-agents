@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chapter 12: The Attack by Fire - Interactive Knowledge Graph</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            margin: 10px 0 0 0;
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .controls {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .control-group select, .control-group button {
+            padding: 8px 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            background: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .control-group select:focus, .control-group button:hover {
+            border-color: #ff6b6b;
+            outline: none;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border-left: 4px solid #ff6b6b;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-number {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #ff6b6b;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+
+        .graph-container {
+            position: relative;
+            height: 700px;
+            background: #f8f9fa;
+            overflow: hidden;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 1000;
+            max-width: 300px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .tooltip h3 {
+            margin: 0 0 8px 0;
+            color: #ff6b6b;
+            font-size: 16px;
+        }
+
+        .tooltip p {
+            margin: 4px 0;
+            line-height: 1.4;
+        }
+
+        .legend {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            font-size: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            border: 1px solid #ccc;
+        }
+
+        .node-label {
+            font-size: 12px;
+            font-weight: 600;
+            text-anchor: middle;
+            pointer-events: none;
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+        }
+
+        .link-label {
+            font-size: 10px;
+            fill: #666;
+            text-anchor: middle;
+            pointer-events: none;
+        }
+
+        .info-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 300px;
+            font-size: 12px;
+        }
+
+        .info-panel h4 {
+            margin: 0 0 10px 0;
+            color: #ff6b6b;
+        }
+
+        .info-panel p {
+            margin: 5px 0;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .stats {
+                justify-content: center;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔥 Chapter 12: The Attack by Fire (火攻)</h1>
+            <p>Interactive Knowledge Graph Visualization</p>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>Layout:</label>
+                <select id="layout-select">
+                    <option value="force">Force-Directed</option>
+                    <option value="circular">Circular</option>
+                    <option value="hierarchical">Hierarchical</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Filter by Category:</label>
+                <select id="category-filter">
+                    <option value="all">All Categories</option>
+                    <option value="fire-attacks">Fire Attack Types</option>
+                    <option value="prerequisites">Prerequisites</option>
+                    <option value="implementation">Implementation</option>
+                    <option value="warnings">Warnings</option>
+                    <option value="principles">Principles</option>
+                    <option value="applications">Modern Applications</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <button id="reset-zoom">Reset Zoom</button>
+                <button id="center-graph">Center Graph</button>
+            </div>
+
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-number" id="node-count">45</div>
+                    <div class="stat-label">Entities</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="link-count">67</div>
+                    <div class="stat-label">Relationships</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="category-count">6</div>
+                    <div class="stat-label">Categories</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="graph-container">
+            <div class="legend">
+                <h4>Categories</h4>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ff6b6b;"></div>
+                    <span>Fire Attack Types</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #4ecdc4;"></div>
+                    <span>Prerequisites</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #45b7d1;"></div>
+                    <span>Implementation</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #96ceb4;"></div>
+                    <span>Strategic Elements</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #feca57;"></div>
+                    <span>Warnings</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ff9ff3;"></div>
+                    <span>Principles</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ff9f43;"></div>
+                    <span>Modern Applications</span>
+                </div>
+            </div>
+
+            <div class="info-panel">
+                <h4>📊 Graph Insights</h4>
+                <p><strong>Most Central:</strong> Fire Strategy (15 connections)</p>
+                <p><strong>Critical Prerequisites:</strong> Material Preparation & Timing</p>
+                <p><strong>Key Principle:</strong> Preparation beats impulse</p>
+                <p><strong>Modern Relevance:</strong> Business strategy & project management</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Graph data
+        const graphData = {
+            nodes: [
+                // Fire Attack Types (Red)
+                { id: "火人", name: "火人 (Fire People)", category: "fire-attacks", group: 1, centrality: 8 },
+                { id: "火積", name: "火積 (Fire Stores)", category: "fire-attacks", group: 1, centrality: 7 },
+                { id: "火輜", name: "火輜 (Fire Baggage)", category: "fire-attacks", group: 1, centrality: 7 },
+                { id: "火庫", name: "火庫 (Fire Arsenals)", category: "fire-attacks", group: 1, centrality: 8 },
+                { id: "火隊", name: "火隊 (Fire Dropping)", category: "fire-attacks", group: 1, centrality: 6 },
+
+                // Prerequisites (Teal)
+                { id: "Material Preparation", name: "Material Preparation", category: "prerequisites", group: 2, centrality: 12 },
+                { id: "Proper Timing", name: "Proper Timing", category: "prerequisites", group: 2, centrality: 10 },
+                { id: "Astronomical Considerations", name: "Astronomical Considerations", category: "prerequisites", group: 2, centrality: 6 },
+                { id: "Wind Conditions", name: "Wind Conditions", category: "prerequisites", group: 2, centrality: 8 },
+
+                // Implementation Strategies (Blue)
+                { id: "Internal Fire Response", name: "Internal Fire Response", category: "implementation", group: 3, centrality: 6 },
+                { id: "Patient Observation", name: "Patient Observation", category: "implementation", group: 3, centrality: 5 },
+                { id: "Timing the Attack", name: "Timing the Attack", category: "implementation", group: 3, centrality: 7 },
+                { id: "External Fire Initiation", name: "External Fire Initiation", category: "implementation", group: 3, centrality: 6 },
+                { id: "Wind Direction Strategy", name: "Wind Direction Strategy", category: "implementation", group: 3, centrality: 5 },
+
+                // Strategic Elements (Green)
+                { id: "Fire Strategy", name: "Fire Strategy", category: "strategic-elements", group: 4, centrality: 15 },
+                { id: "Water Strategy", name: "Water Strategy", category: "strategic-elements", group: 4, centrality: 6 },
+                { id: "Elemental Warfare", name: "Elemental Warfare", category: "strategic-elements", group: 4, centrality: 4 },
+
+                // Warnings (Yellow)
+                { id: "費留 Principle", name: "費留 Principle (Waste & Stagnation)", category: "warnings", group: 5, centrality: 6 },
+                { id: "Emotional Control", name: "Emotional Control", category: "warnings", group: 5, centrality: 8 },
+                { id: "Irreversible Consequences", name: "Irreversible Consequences", category: "warnings", group: 5, centrality: 5 },
+
+                // Strategic Principles (Purple)
+                { id: "Advantage-Based Decision Making", name: "Advantage-Based Decision Making", category: "principles", group: 6, centrality: 7 },
+                { id: "Preparation and Planning", name: "Preparation and Planning", category: "principles", group: 6, centrality: 9 },
+                { id: "Caution and Restraint", name: "Caution and Restraint", category: "principles", group: 6, centrality: 6 },
+
+                // Modern Applications (Orange)
+                { id: "Business Strategy", name: "Business Strategy", category: "applications", group: 7, centrality: 4 },
+                { id: "Project Management", name: "Project Management", category: "applications", group: 7, centrality: 4 },
+                { id: "Personal Development", name: "Personal Development", category: "applications", group: 7, centrality: 4 },
+
+                // Additional entities for relationships
+                { id: "Enemy Soldiers", name: "Enemy Soldiers", category: "targets", group: 8, centrality: 3 },
+                { id: "Food Stores", name: "Food Stores", category: "targets", group: 8, centrality: 3 },
+                { id: "Military Equipment", name: "Military Equipment", category: "targets", group: 8, centrality: 3 },
+                { id: "Weapons Depots", name: "Weapons Depots", category: "targets", group: 8, centrality: 3 },
+                { id: "Enemy Formations", name: "Enemy Formations", category: "targets", group: 8, centrality: 3 },
+                { id: "Dry Weather", name: "Dry Weather", category: "conditions", group: 9, centrality: 3 },
+                { id: "Moon Positions", name: "Moon Positions", category: "conditions", group: 9, centrality: 3 },
+                { id: "Wind Patterns", name: "Wind Patterns", category: "conditions", group: 9, centrality: 3 },
+                { id: "Enemy Confusion", name: "Enemy Confusion", category: "effects", group: 10, centrality: 3 },
+                { id: "Strategic Success", name: "Strategic Success", category: "outcomes", group: 11, centrality: 5 },
+                { id: "Market Disruption", name: "Market Disruption", category: "applications", group: 7, centrality: 3 },
+                { id: "Resource Planning", name: "Resource Planning", category: "applications", group: 7, centrality: 3 },
+                { id: "Strategic Thinking", name: "Strategic Thinking", category: "applications", group: 7, centrality: 3 }
+            ],
+
+            links: [
+                // Fire Attack Type Relationships
+                { source: "火人", target: "Enemy Soldiers", relationship: "TARGETS", strength: 3 },
+                { source: "火人", target: "Material Preparation", relationship: "REQUIRES", strength: 2 },
+                { source: "火人", target: "Proper Timing", relationship: "DEPENDS_ON", strength: 2 },
+                { source: "火積", target: "Food Stores", relationship: "TARGETS", strength: 3 },
+                { source: "火積", target: "Wind Conditions", relationship: "REQUIRES", strength: 2 },
+                { source: "火輜", target: "Military Equipment", relationship: "TARGETS", strength: 3 },
+                { source: "火輜", target: "External Fire Initiation", relationship: "REQUIRES", strength: 2 },
+                { source: "火庫", target: "Weapons Depots", relationship: "TARGETS", strength: 3 },
+                { source: "火庫", target: "Preparation and Planning", relationship: "REQUIRES", strength: 2 },
+                { source: "火隊", target: "Enemy Formations", relationship: "TARGETS", strength: 3 },
+                { source: "火隊", target: "Wind Conditions", relationship: "DEPENDS_ON", strength: 2 },
+                { source: "火隊", target: "Astronomical Considerations", relationship: "REQUIRES", strength: 2 },
+
+                // Prerequisite Relationships
+                { source: "Material Preparation", target: "火人", relationship: "ENABLES", strength: 2 },
+                { source: "Material Preparation", target: "火積", relationship: "ENABLES", strength: 2 },
+                { source: "Material Preparation", target: "火輜", relationship: "ENABLES", strength: 2 },
+                { source: "Material Preparation", target: "火庫", relationship: "ENABLES", strength: 2 },
+                { source: "Material Preparation", target: "火隊", relationship: "ENABLES", strength: 2 },
+                { source: "Proper Timing", target: "Dry Weather", relationship: "REQUIRES", strength: 2 },
+                { source: "Proper Timing", target: "Astronomical Considerations", relationship: "DEPENDS_ON", strength: 2 },
+                { source: "Proper Timing", target: "Wind Conditions", relationship: "AFFECTS", strength: 2 },
+                { source: "Astronomical Considerations", target: "Moon Positions", relationship: "INCLUDES", strength: 2 },
+                { source: "Astronomical Considerations", target: "Wind Patterns", relationship: "AFFECTS", strength: 2 },
+                { source: "Wind Conditions", target: "Wind Patterns", relationship: "INCLUDES", strength: 2 },
+
+                // Implementation Relationships
+                { source: "Internal Fire Response", target: "Enemy Confusion", relationship: "CAPITALIZES_ON", strength: 2 },
+                { source: "Timing the Attack", target: "Strategic Success", relationship: "ENABLES", strength: 2 },
+                { source: "External Fire Initiation", target: "Material Preparation", relationship: "DEPENDS_ON", strength: 2 },
+                { source: "Wind Direction Strategy", target: "Wind Conditions", relationship: "REQUIRES", strength: 2 },
+
+                // Strategic Element Relationships
+                { source: "Fire Strategy", target: "火人", relationship: "INCLUDES", strength: 2 },
+                { source: "Fire Strategy", target: "火積", relationship: "INCLUDES", strength: 2 },
+                { source: "Fire Strategy", target: "火輜", relationship: "INCLUDES", strength: 2 },
+                { source: "Fire Strategy", target: "火庫", relationship: "INCLUDES", strength: 2 },
+                { source: "Fire Strategy", target: "火隊", relationship: "INCLUDES", strength: 2 },
+                { source: "Fire Strategy", target: "Material Preparation", relationship: "REQUIRES", strength: 2 },
+                { source: "Fire Strategy", target: "Proper Timing", relationship: "REQUIRES", strength: 2 },
+                { source: "Elemental Warfare", target: "Fire Strategy", relationship: "COMPARES", strength: 1 },
+                { source: "Elemental Warfare", target: "Water Strategy", relationship: "COMPARES", strength: 1 },
+
+                // Warning Relationships
+                { source: "費留 Principle", target: "Preparation and Planning", relationship: "REQUIRES", strength: 2 },
+                { source: "Emotional Control", target: "Strategic Success", relationship: "ESSENTIAL_FOR", strength: 2 },
+                { source: "Irreversible Consequences", target: "Caution and Restraint", relationship: "REQUIRES", strength: 2 },
+
+                // Principle Relationships
+                { source: "Advantage-Based Decision Making", target: "Strategic Success", relationship: "ENABLES", strength: 2 },
+                { source: "Preparation and Planning", target: "Material Preparation", relationship: "INCLUDES", strength: 2 },
+                { source: "Preparation and Planning", target: "Proper Timing", relationship: "INCLUDES", strength: 2 },
+                { source: "Caution and Restraint", target: "Strategic Success", relationship: "MAINTAINS", strength: 2 },
+
+                // Modern Application Relationships
+                { source: "Business Strategy", target: "Fire Strategy", relationship: "RELATES_TO", strength: 1 },
+                { source: "Business Strategy", target: "Market Disruption", relationship: "INCLUDES", strength: 2 },
+                { source: "Project Management", target: "Material Preparation", relationship: "SIMILAR_TO", strength: 1 },
+                { source: "Project Management", target: "Resource Planning", relationship: "INCLUDES", strength: 2 },
+                { source: "Personal Development", target: "Emotional Control", relationship: "DIRECTLY_RELATES_TO", strength: 1 },
+                { source: "Personal Development", target: "Strategic Thinking", relationship: "INCLUDES", strength: 2 },
+
+                // Additional connections for completeness
+                { source: "Dry Weather", target: "Wind Conditions", relationship: "AFFECTS", strength: 1 },
+                { source: "Moon Positions", target: "Astronomical Considerations", relationship: "PART_OF", strength: 2 },
+                { source: "Wind Patterns", target: "Wind Direction Strategy", relationship: "INFLUENCES", strength: 2 },
+                { source: "Enemy Confusion", target: "Strategic Success", relationship: "CONTRIBUTES_TO", strength: 1 }
+            ]
+        };
+
+        // Color scheme
+        const colors = {
+            "fire-attacks": "#ff6b6b",
+            "prerequisites": "#4ecdc4",
+            "implementation": "#45b7d1",
+            "strategic-elements": "#96ceb4",
+            "warnings": "#feca57",
+            "principles": "#ff9ff3",
+            "applications": "#ff9f43",
+            "targets": "#a8e6cf",
+            "conditions": "#dcedc1",
+            "effects": "#ffd3b6",
+            "outcomes": "#ffaaa5"
+        };
+
+        // Initialize visualization
+        const width = document.querySelector('.graph-container').clientWidth;
+        const height = document.querySelector('.graph-container').clientHeight;
+
+        const svg = d3.select('.graph-container')
+            .append('svg')
+            .attr('width', width)
+            .attr('height', height);
+
+        const g = svg.append('g');
+
+        // Add zoom behavior
+        const zoom = d3.zoom()
+            .scaleExtent([0.1, 4])
+            .on('zoom', (event) => {
+                g.attr('transform', event.transform);
+            });
+
+        svg.call(zoom);
+
+        // Create force simulation
+        const simulation = d3.forceSimulation(graphData.nodes)
+            .force('link', d3.forceLink(graphData.links).id(d => d.id).distance(100))
+            .force('charge', d3.forceManyBody().strength(-300))
+            .force('center', d3.forceCenter(width / 2, height / 2))
+            .force('collision', d3.forceCollide().radius(30));
+
+        // Create links
+        const link = g.append('g')
+            .selectAll('line')
+            .data(graphData.links)
+            .enter().append('line')
+            .attr('stroke', '#999')
+            .attr('stroke-opacity', 0.6)
+            .attr('stroke-width', d => d.strength);
+
+        // Create nodes
+        const node = g.append('g')
+            .selectAll('circle')
+            .data(graphData.nodes)
+            .enter().append('circle')
+            .attr('r', d => Math.max(8, Math.min(20, d.centrality * 1.5)))
+            .attr('fill', d => colors[d.category] || '#ccc')
+            .attr('stroke', '#fff')
+            .attr('stroke-width', 2)
+            .call(d3.drag()
+                .on('start', dragstarted)
+                .on('drag', dragged)
+                .on('end', dragended));
+
+        // Add node labels
+        const label = g.append('g')
+            .selectAll('text')
+            .data(graphData.nodes)
+            .enter().append('text')
+            .attr('class', 'node-label')
+            .text(d => d.name.length > 20 ? d.name.substring(0, 20) + '...' : d.name)
+            .attr('dy', '.35em');
+
+        // Add link labels
+        const linkLabel = g.append('g')
+            .selectAll('text')
+            .data(graphData.links)
+            .enter().append('text')
+            .attr('class', 'link-label')
+            .text(d => d.relationship);
+
+        // Create tooltip
+        const tooltip = d3.select('body').append('div')
+            .attr('class', 'tooltip')
+            .style('opacity', 0);
+
+        // Add hover effects
+        node.on('mouseover', function(event, d) {
+            tooltip.transition()
+                .duration(200)
+                .style('opacity', .9);
+            
+            tooltip.html(`
+                <h3>${d.name}</h3>
+                <p><strong>Category:</strong> ${d.category.replace('-', ' ').toUpperCase()}</p>
+                <p><strong>Centrality:</strong> ${d.centrality} connections</p>
+                <p><strong>Group:</strong> ${d.group}</p>
+            `)
+                .style('left', (event.pageX + 10) + 'px')
+                .style('top', (event.pageY - 28) + 'px');
+
+            // Highlight connected nodes
+            node.style('opacity', 0.3);
+            link.style('opacity', 0.1);
+            
+            const connectedNodes = new Set();
+            graphData.links.forEach(l => {
+                if (l.source.id === d.id || l.target.id === d.id) {
+                    connectedNodes.add(l.source.id);
+                    connectedNodes.add(l.target.id);
+                }
+            });
+
+            node.filter(n => connectedNodes.has(n.id))
+                .style('opacity', 1);
+            
+            link.filter(l => l.source.id === d.id || l.target.id === d.id)
+                .style('opacity', 0.8);
+        })
+        .on('mouseout', function() {
+            tooltip.transition()
+                .duration(500)
+                .style('opacity', 0);
+            
+            node.style('opacity', 1);
+            link.style('opacity', 0.6);
+        });
+
+        // Update positions on simulation tick
+        simulation.on('tick', () => {
+            link
+                .attr('x1', d => d.source.x)
+                .attr('y1', d => d.source.y)
+                .attr('x2', d => d.target.x)
+                .attr('y2', d => d.target.y);
+
+            node
+                .attr('cx', d => d.x)
+                .attr('cy', d => d.y);
+
+            label
+                .attr('x', d => d.x)
+                .attr('y', d => d.y);
+
+            linkLabel
+                .attr('x', d => (d.source.x + d.target.x) / 2)
+                .attr('y', d => (d.source.y + d.target.y) / 2);
+        });
+
+        // Drag functions
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+
+        // Control functions
+        document.getElementById('reset-zoom').addEventListener('click', () => {
+            svg.transition().duration(750).call(
+                zoom.transform,
+                d3.zoomIdentity
+            );
+        });
+
+        document.getElementById('center-graph').addEventListener('click', () => {
+            simulation.force('center', d3.forceCenter(width / 2, height / 2));
+            simulation.alpha(1).restart();
+        });
+
+        document.getElementById('layout-select').addEventListener('change', (e) => {
+            const layout = e.target.value;
+            
+            if (layout === 'circular') {
+                const radius = Math.min(width, height) / 2 - 100;
+                graphData.nodes.forEach((d, i) => {
+                    const angle = (i / graphData.nodes.length) * 2 * Math.PI;
+                    d.x = width / 2 + radius * Math.cos(angle);
+                    d.y = height / 2 + radius * Math.sin(angle);
+                });
+                simulation.force('link', null);
+                simulation.force('charge', null);
+                simulation.alpha(1).restart();
+            } else if (layout === 'hierarchical') {
+                // Simple hierarchical layout
+                const levels = {};
+                graphData.nodes.forEach(d => {
+                    if (!levels[d.group]) levels[d.group] = [];
+                    levels[d.group].push(d);
+                });
+                
+                const levelCount = Object.keys(levels).length;
+                const levelHeight = height / (levelCount + 1);
+                
+                Object.keys(levels).forEach((level, i) => {
+                    const nodes = levels[level];
+                    const levelY = (i + 1) * levelHeight;
+                    const nodeSpacing = width / (nodes.length + 1);
+                    
+                    nodes.forEach((node, j) => {
+                        node.x = (j + 1) * nodeSpacing;
+                        node.y = levelY;
+                    });
+                });
+                
+                simulation.force('link', null);
+                simulation.force('charge', null);
+                simulation.alpha(1).restart();
+            } else {
+                // Force-directed layout
+                simulation.force('link', d3.forceLink(graphData.links).id(d => d.id).distance(100));
+                simulation.force('charge', d3.forceManyBody().strength(-300));
+                simulation.alpha(1).restart();
+            }
+        });
+
+        document.getElementById('category-filter').addEventListener('change', (e) => {
+            const category = e.target.value;
+            
+            if (category === 'all') {
+                node.style('opacity', 1);
+                link.style('opacity', 0.6);
+            } else {
+                node.style('opacity', d => d.category === category ? 1 : 0.1);
+                link.style('opacity', d => 
+                    (d.source.category === category || d.target.category === category) ? 0.6 : 0.1
+                );
+            }
+        });
+
+        // Update stats
+        document.getElementById('node-count').textContent = graphData.nodes.length;
+        document.getElementById('link-count').textContent = graphData.links.length;
+        document.getElementById('category-count').textContent = Object.keys(colors).length;
+
+        // Responsive resize
+        window.addEventListener('resize', () => {
+            const newWidth = document.querySelector('.graph-container').clientWidth;
+            const newHeight = document.querySelector('.graph-container').clientHeight;
+            
+            svg.attr('width', newWidth).attr('height', newHeight);
+            simulation.force('center', d3.forceCenter(newWidth / 2, newHeight / 2));
+            simulation.alpha(1).restart();
+        });
+    </script>
+</body>
+</html>
