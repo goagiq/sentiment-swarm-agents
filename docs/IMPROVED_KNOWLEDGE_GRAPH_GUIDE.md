@@ -1,1 +1,0 @@
-# Improved Knowledge Graph Guide

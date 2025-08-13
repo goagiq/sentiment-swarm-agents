@@ -290,7 +290,7 @@ def main():
     st.sidebar.title("Navigation")
     page = st.sidebar.selectbox(
         "Choose Analysis Type",
-        ["Dashboard", "Text Analysis", "Semantic Search", "Social Media", "Webpage Analysis", "System Status"]
+        ["Dashboard", "Text Analysis", "Semantic Search", "Social Media", "Webpage Analysis", "Predictive Analytics", "Scenario Analysis", "Real-Time Monitoring", "Decision Support", "System Status"]
     )
     
     # Dashboard page
@@ -811,6 +811,54 @@ def main():
             - **Content structure** analysis
             - **Language detection**
             """)
+    
+    # Predictive Analytics page
+    elif page == "Predictive Analytics":
+        st.markdown("## 📈 Predictive Analytics Dashboard")
+        
+        # Import and run the predictive dashboard
+        try:
+            from ui.predictive_dashboard import main as predictive_main
+            predictive_main()
+        except ImportError as e:
+            st.error(f"Error loading predictive analytics dashboard: {e}")
+            st.info("Please ensure the predictive_dashboard.py file exists.")
+    
+    # Scenario Analysis page
+    elif page == "Scenario Analysis":
+        st.markdown("## 🎯 Scenario Analysis")
+        
+        # Import and run the scenario comparison
+        try:
+            from ui.scenario_comparison import main as scenario_main
+            scenario_main()
+        except ImportError as e:
+            st.error(f"Error loading scenario analysis: {e}")
+            st.info("Please ensure the scenario_comparison.py file exists.")
+    
+    # Real-Time Monitoring page
+    elif page == "Real-Time Monitoring":
+        st.markdown("## ⚡ Real-Time Monitoring")
+        
+        # Import and run the real-time monitoring
+        try:
+            from ui.real_time_monitoring import main as monitoring_main
+            monitoring_main()
+        except ImportError as e:
+            st.error(f"Error loading real-time monitoring: {e}")
+            st.info("Please ensure the real_time_monitoring.py file exists.")
+    
+    # Decision Support page
+    elif page == "Decision Support":
+        st.markdown("## 🤖 Decision Support")
+        
+        # Import and run the decision support
+        try:
+            from ui.decision_support import main as decision_main
+            decision_main()
+        except ImportError as e:
+            st.error(f"Error loading decision support: {e}")
+            st.info("Please ensure the decision_support.py file exists.")
     
     # System Status page
     elif page == "System Status":

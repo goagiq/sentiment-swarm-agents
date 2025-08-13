@@ -1913,6 +1913,114 @@ async def generate_graph_report_endpoint(request: GraphReportRequest = None):
         raise HTTPException(status_code=500, detail=f"Graph visualization generation failed: {str(e)}")
 
 
+# Analytics endpoints
+@app.post("/analytics/predictive")
+async def predictive_analytics_endpoint(request: dict):
+    """Perform predictive analytics analysis."""
+    try:
+        from src.agents.predictive_analytics_agent import PredictiveAnalyticsAgent
+        
+        agent = PredictiveAnalyticsAgent()
+        result = await agent.process_predictive_analysis(request)
+        return {"success": True, "result": result}
+    except Exception as e:
+        logger.error(f"Predictive analytics error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Predictive analytics failed: {str(e)}")
+
+
+@app.post("/analytics/scenario")
+async def scenario_analysis_endpoint(request: dict):
+    """Perform scenario analysis."""
+    try:
+        from src.agents.scenario_analysis_agent import ScenarioAnalysisAgent
+        
+        agent = ScenarioAnalysisAgent()
+        result = await agent.process_scenario_analysis(request)
+        return {"success": True, "result": result}
+    except Exception as e:
+        logger.error(f"Scenario analysis error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Scenario analysis failed: {str(e)}")
+
+
+@app.post("/analytics/decision-support")
+async def decision_support_endpoint(request: dict):
+    """Get AI-powered decision support recommendations."""
+    try:
+        from src.agents.decision_support_agent import DecisionSupportAgent
+        
+        agent = DecisionSupportAgent()
+        result = await agent.process_decision_support(request)
+        return {"success": True, "result": result}
+    except Exception as e:
+        logger.error(f"Decision support error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Decision support failed: {str(e)}")
+
+
+@app.post("/analytics/risk-assessment")
+async def risk_assessment_endpoint(request: dict):
+    """Perform risk assessment analysis."""
+    try:
+        from src.agents.risk_assessment_agent import RiskAssessmentAgent
+        
+        agent = RiskAssessmentAgent()
+        result = await agent.process_risk_assessment(request)
+        return {"success": True, "result": result}
+    except Exception as e:
+        logger.error(f"Risk assessment error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Risk assessment failed: {str(e)}")
+
+
+@app.post("/analytics/fault-detection")
+async def fault_detection_endpoint(request: dict):
+    """Perform fault detection and system monitoring."""
+    try:
+        from src.agents.fault_detection_agent import FaultDetectionAgent
+        
+        agent = FaultDetectionAgent()
+        result = await agent.process_fault_detection(request)
+        return {"success": True, "result": result}
+    except Exception as e:
+        logger.error(f"Fault detection error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Fault detection failed: {str(e)}")
+
+
+@app.get("/analytics/performance")
+async def performance_optimization_endpoint():
+    """Get performance optimization recommendations."""
+    try:
+        from src.core.performance_optimizer import get_performance_optimizer
+        
+        optimizer = await get_performance_optimizer()
+        report = await optimizer.get_performance_report()
+        return {"success": True, "result": report}
+    except Exception as e:
+        logger.error(f"Performance optimization error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Performance optimization failed: {str(e)}")
+
+
+@app.post("/analytics/optimize")
+async def apply_optimizations_endpoint(request: dict):
+    """Apply performance optimizations."""
+    try:
+        from src.core.performance_optimizer import get_performance_optimizer
+        
+        optimization_type = request.get("optimization_type", "all")
+        optimizer = await get_performance_optimizer()
+        result = await optimizer.apply_optimizations(optimization_type)
+        return {"success": True, "result": result}
+    except Exception as e:
+        logger.error(f"Apply optimizations error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Apply optimizations failed: {str(e)}")
+
+
+# Import advanced analytics routes
+try:
+    from src.api.advanced_analytics_routes import router as advanced_analytics_router
+    app.include_router(advanced_analytics_router)
+    logger.info("✅ Advanced analytics routes included")
+except Exception as e:
+    logger.warning(f"⚠️ Could not include advanced analytics routes: {e}")
+
 # Root endpoint
 @app.get("/")
 async def root():
@@ -1966,6 +2074,14 @@ async def root():
             "reflection_insights": "/reflection/insights",
             "response_validation": "/reflection/validate",
             "models": "/models",
-            "agent_status": "/agents/status"
+            "agent_status": "/agents/status",
+            "predictive_analytics": "/analytics/predictive",
+            "scenario_analysis": "/analytics/scenario",
+            "decision_support": "/analytics/decision-support",
+            "risk_assessment": "/analytics/risk-assessment",
+            "fault_detection": "/analytics/fault-detection",
+            "performance_optimization": "/analytics/performance",
+            "apply_optimizations": "/analytics/optimize",
+            "advanced_analytics": "/advanced-analytics"
         }
     }

@@ -9,6 +9,8 @@ set -e
 HEALTH_URL="http://localhost:8002/health"
 METRICS_URL="http://localhost:8002/metrics"
 MCP_URL="http://localhost:8000/mcp"
+ADVANCED_ANALYTICS_URL="http://localhost:8003/advanced-analytics/health"
+MAIN_API_URL="http://localhost:8003/health"
 OLLAMA_URL="http://localhost:11434/api/tags"
 REDIS_HOST="localhost"
 REDIS_PORT="6379"
@@ -89,6 +91,12 @@ main() {
     
     # Check MCP server
     check "MCP Server" "curl -f -s -o /dev/null -w '%{http_code}' $MCP_URL | grep -q '200'"
+    
+    # Check Advanced Analytics API
+    check "Advanced Analytics API" "curl -f -s -o /dev/null -w '%{http_code}' $ADVANCED_ANALYTICS_URL | grep -q '200'"
+    
+    # Check Main API
+    check "Main API" "curl -f -s -o /dev/null -w '%{http_code}' $MAIN_API_URL | grep -q '200'"
     
     # Check Ollama service
     check "Ollama Service" "curl -f -s -o /dev/null -w '%{http_code}' $OLLAMA_URL | grep -q '200'"

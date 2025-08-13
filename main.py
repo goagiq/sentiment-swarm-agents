@@ -210,6 +210,32 @@ if __name__ == "__main__":
     print("Starting Sentiment Analysis Swarm with MCP Integration")
     print("=" * 60)
     
+    # Initialize performance optimizer and data collector
+    print("Initializing performance monitoring system...")
+    try:
+        from src.core.performance_optimizer import get_performance_optimizer
+        from src.core.performance_data_collector import get_performance_data_collector
+        import asyncio
+        
+        async def init_performance_system():
+            # Initialize performance data collector
+            collector = await get_performance_data_collector()
+            await collector.start_collection()
+            print("✅ Performance data collection started")
+            
+            # Initialize performance optimizer
+            optimizer = await get_performance_optimizer()
+            await optimizer.start_monitoring()
+            print("✅ Performance monitoring started")
+        
+        # Start performance monitoring in background
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.create_task(init_performance_system())
+        print("✅ Performance monitoring system initialized")
+    except Exception as e:
+        print(f"⚠️ Warning: Could not initialize performance monitoring system: {e}")
+    
     # Create MCP server for integration
     print("Creating MCP server for integration...")
     mcp_server = start_mcp_server()

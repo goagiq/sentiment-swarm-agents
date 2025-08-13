@@ -102,10 +102,69 @@ class SentimentOrchestrator:
             DataType.WEBPAGE, DataType.PDF, DataType.SOCIAL_MEDIA
         ])
 
+        # Phase 1: Pattern Recognition Agent
+        from src.agents.pattern_recognition_agent import PatternRecognitionAgent
+        
+        pattern_recognition_agent = PatternRecognitionAgent()
+        self._register_agent(pattern_recognition_agent, [
+            DataType.TIME_SERIES, DataType.NUMERICAL, DataType.TEXT,
+            DataType.AUDIO, DataType.VIDEO, DataType.IMAGE
+        ])
+
+        # Phase 2: Predictive Analytics Agent
+        from src.agents.predictive_analytics_agent import PredictiveAnalyticsAgent
+        
+        predictive_analytics_agent = PredictiveAnalyticsAgent()
+        self._register_agent(predictive_analytics_agent, [
+            DataType.TIME_SERIES, DataType.NUMERICAL
+        ])
+
+        # Phase 2.2: Scenario Analysis Agent
+        from src.agents.scenario_analysis_agent import ScenarioAnalysisAgent
+        
+        scenario_analysis_agent = ScenarioAnalysisAgent()
+        self._register_agent(scenario_analysis_agent, [
+            DataType.TIME_SERIES, DataType.NUMERICAL, DataType.TEXT
+        ])
+
+        # Phase 2.3: Real-Time Monitoring Agent
+        from src.agents.real_time_monitoring_agent import RealTimeMonitoringAgent
+        
+        real_time_monitoring_agent = RealTimeMonitoringAgent()
+        self._register_agent(real_time_monitoring_agent, [
+            DataType.TIME_SERIES, DataType.NUMERICAL, DataType.TEXT
+        ])
+
+        # Phase 3.1: Decision Support Agent
+        from src.agents.decision_support_agent import DecisionSupportAgent
+        
+        decision_support_agent = DecisionSupportAgent()
+        self._register_agent(decision_support_agent, [
+            DataType.TEXT, DataType.NUMERICAL, DataType.TIME_SERIES
+        ])
+
+        # Phase 3.2: Risk Assessment Agent
+        from src.agents.risk_assessment_agent import RiskAssessmentAgent
+        
+        risk_assessment_agent = RiskAssessmentAgent()
+        self._register_agent(risk_assessment_agent, [
+            DataType.TEXT, DataType.NUMERICAL, DataType.TIME_SERIES
+        ])
+
+        # Phase 3.3: Fault Detection Agent
+        from src.agents.fault_detection_agent import FaultDetectionAgent
+        
+        fault_detection_agent = FaultDetectionAgent()
+        self._register_agent(fault_detection_agent, [
+            DataType.TEXT, DataType.NUMERICAL, DataType.TIME_SERIES
+        ])
+
         logger.info(
             f"Registered {len(self.agents)} unified agents including "
             f"GraphRAG-inspired Knowledge Graph Agent, File Extraction Agent, "
-            f"Phase 4 Export & Automation Agents, and Phase 5 Semantic Search & Agent Reflection Agents"
+            f"Phase 4 Export & Automation Agents, Phase 5 Semantic Search & Agent Reflection Agents, "
+            f"Phase 1 Pattern Recognition Agent, Phase 2 Predictive Analytics Agent, Phase 2.2 Scenario Analysis Agent, Phase 2.3 Real-Time Monitoring Agent, "
+            f"Phase 3.1 Decision Support Agent, Phase 3.2 Risk Assessment Agent, and Phase 3.3 Fault Detection Agent"
         )
 
     def _register_agent(self, agent: BaseAgent, supported_types: List[DataType]):
@@ -236,18 +295,40 @@ class SentimentOrchestrator:
             raise ValueError(f"No suitable agent found for data type: {request.data_type}")
 
         # Process with reflection if enabled
-        if request.reflection_enabled:
-            result = await self._process_with_reflection(request, agent)
-        else:
-            result = await agent.process(request)
+        try:
+            if request.reflection_enabled:
+                result = await self._process_with_reflection(request, agent)
+            else:
+                result = await agent.process(request)
 
-        # Record processing in duplicate detection service
-        await self._record_processing(request, result)
+            # Record processing in duplicate detection service
+            await self._record_processing(request, result)
 
-        # Cache the result
-        self._cache_result(cache_key, result)
+            # Cache the result
+            self._cache_result(cache_key, result)
 
-        return result
+            return result
+        except Exception as e:
+            logger.error(f"Analysis failed: {e}")
+            # Return a proper error result
+            from src.core.models import SentimentResult
+            error_result = AnalysisResult(
+                request_id=request.id,
+                data_type=request.data_type,
+                sentiment=SentimentResult(
+                    label="neutral",
+                    confidence=0.0,
+                    reasoning=f"Analysis failed: {str(e)}"
+                ),
+                processing_time=0.0,
+                raw_content=str(request.content),
+                extracted_text="",
+                metadata={"error": str(e)},
+                model_used="error_handler",
+                reflection_enabled=request.reflection_enabled,
+                quality_score=0.0
+            )
+            return error_result
 
     async def _find_suitable_agent(self, request: AnalysisRequest) -> Optional[BaseAgent]:
         """Find a suitable agent for the request."""
@@ -503,19 +584,15 @@ class SentimentOrchestrator:
             data_type=request.data_type,
             sentiment=SentimentResult(
                 label="duplicate",
-                confidence=duplicate_result.confidence,
-                metadata={
-                    "duplicate_type": duplicate_result.duplicate_type,
-                    "existing_metadata": duplicate_result.existing_metadata.__dict__ if duplicate_result.existing_metadata else None,
-                    "similarity_score": duplicate_result.similarity_score,
-                    "recommendation": duplicate_result.recommendation
-                }
+                confidence=duplicate_result.confidence
             ),
             processing_time=0.0,
             status=ProcessingStatus.COMPLETED,
             metadata={
                 "duplicate_detected": True,
                 "duplicate_type": duplicate_result.duplicate_type,
+                "existing_metadata": duplicate_result.existing_metadata.__dict__ if duplicate_result.existing_metadata and hasattr(duplicate_result.existing_metadata, '__dict__') else None,
+                "similarity_score": duplicate_result.similarity_score,
                 "recommendation": duplicate_result.recommendation
             }
         )

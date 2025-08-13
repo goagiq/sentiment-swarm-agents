@@ -2,7 +2,6 @@
 Core data models for the sentiment analysis system.
 """
 
-from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 from uuid import uuid4
@@ -44,6 +43,8 @@ class DataType(str, Enum):
     MARKET_DATA = "market_data"
     FINANCIAL = "financial"
     GENERAL = "general"
+    TIME_SERIES = "time_series"
+    NUMERICAL = "numerical"
 
 
 class ModelType(str, Enum):
@@ -98,11 +99,18 @@ class AnalysisRequest(BaseModel):
     content: Union[str, bytes, Dict[str, Any]]
     language: str = "en"
     model_preference: Optional[str] = None  # Specific model to use
-    reflection_enabled: bool = True  # Enable reflection for quality improvement
+    # Enable reflection for quality improvement
+    reflection_enabled: bool = True
     max_iterations: int = 3  # Maximum reflection iterations
     confidence_threshold: float = 0.8  # Minimum confidence threshold
-    force_reprocess: bool = False  # Force reprocessing even if duplicate detected
-    metadata: Dict[str, Any] = Field(default_factory=dict)  # Additional metadata for processing
+    # Force reprocessing even if duplicate detected
+    force_reprocess: bool = False
+    # Enable analytics capabilities
+    enable_analytics: bool = False
+    # Additional metadata for processing
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict
+    )
 
 
 class SentimentResult(BaseModel):
@@ -127,11 +135,14 @@ class AnalysisResult(BaseModel):
     status: Optional[str] = None
     raw_content: Optional[str] = None
     extracted_text: Optional[str] = None
-    pages: Optional[List[PageData]] = None  # Structured page data for PDFs
+    # Structured page data for PDFs
+    pages: Optional[List[PageData]] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
     model_used: Optional[str] = None
     reflection_enabled: bool = True
     quality_score: Optional[float] = None
+    success: bool = True  # Indicates if the analysis was successful
+    error_message: Optional[str] = None  # Error message if analysis failed
 
 
 class ModelRegistry(BaseModel):

@@ -93,3 +93,29 @@ async def call_unified_mcp_tool(tool_name: str, parameters: Dict[str, Any]) -> D
     """Call a tool on the unified MCP server using the global client."""
     client = await get_unified_mcp_client()
     return await client.call_tool(tool_name, parameters)
+
+
+# Analytics-specific MCP tool calls
+async def call_predictive_analytics_tool(tool_name: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
+    """Call a predictive analytics tool on the unified MCP server."""
+    return await call_unified_mcp_tool(f"predictive_analytics_{tool_name}", parameters)
+
+
+async def call_scenario_analysis_tool(tool_name: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
+    """Call a scenario analysis tool on the unified MCP server."""
+    return await call_unified_mcp_tool(f"scenario_analysis_{tool_name}", parameters)
+
+
+async def call_decision_support_tool(tool_name: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
+    """Call a decision support tool on the unified MCP server."""
+    return await call_unified_mcp_tool(f"decision_support_{tool_name}", parameters)
+
+
+async def call_monitoring_tool(tool_name: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
+    """Call a monitoring tool on the unified MCP server."""
+    return await call_unified_mcp_tool(f"monitoring_{tool_name}", parameters)
+
+
+async def call_performance_optimization_tool(tool_name: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
+    """Call a performance optimization tool on the unified MCP server."""
+    return await call_unified_mcp_tool(f"performance_optimization_{tool_name}", parameters)

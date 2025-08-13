@@ -1,0 +1,41 @@
+{
+  "test_results": {
+    "Performance Data Collector Initialization": {
+      "status": "PASSED",
+      "message": "Collector initialized successfully with correct configuration",
+      "duration": 0.002040863037109375
+    },
+    "Comprehensive Data Collection": {
+      "status": "PASSED",
+      "message": "Collected data with 0 operations",
+      "duration": 1.009178638458252
+    },
+    "Data Storage and Retrieval": {
+      "status": "PASSED",
+      "message": "Stored and retrieved 1 records",
+      "duration": 1.0161101818084717
+    },
+    "Performance Optimizer Integration": {
+      "status": "FAILED",
+      "message": "Report should be successful",
+      "duration": 0.0010073184967041016
+    },
+    "Collection Lifecycle": {
+      "status": "PASSED",
+      "message": "Collection start/stop lifecycle working correctly",
+      "duration": 2.0380921363830566
+    },
+    "Performance Summary Generation": {
+      "status": "PASSED",
+      "message": "Generated summary with 3 records",
+      "duration": 4.28250527381897
+    }
+  },
+  "summary": {
+    "total_tests": 6,
+    "passed": 5,
+    "failed": 1,
+    "success_rate": 83.33333333333334,
+    "total_duration": 6.311347961425781
+  }
+}

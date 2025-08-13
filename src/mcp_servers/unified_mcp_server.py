@@ -28,12 +28,18 @@ from core.semantic_search_service import semantic_search_service
 
 # Import agents
 # flake8: noqa: E402
-from agents.unified_text_agent import UnifiedTextAgent
-from agents.unified_vision_agent import UnifiedVisionAgent
-from agents.unified_audio_agent import UnifiedAudioAgent
-from agents.enhanced_file_extraction_agent import EnhancedFileExtractionAgent
-from agents.knowledge_graph_agent import KnowledgeGraphAgent
-from agents.web_agent_enhanced import EnhancedWebAgent
+from src.agents.unified_text_agent import UnifiedTextAgent
+from src.agents.unified_vision_agent import UnifiedVisionAgent
+from src.agents.unified_audio_agent import UnifiedAudioAgent
+from src.agents.enhanced_file_extraction_agent import EnhancedFileExtractionAgent
+from src.agents.knowledge_graph_agent import KnowledgeGraphAgent
+from src.agents.web_agent_enhanced import EnhancedWebAgent
+
+# Import advanced analytics agents
+from src.agents.advanced_forecasting_agent import AdvancedForecastingAgent
+from src.agents.causal_analysis_agent import CausalAnalysisAgent
+from src.agents.anomaly_detection_agent import AnomalyDetectionAgent
+from src.agents.advanced_ml_agent import AdvancedMLAgent
 
 # Import configuration
 # flake8: noqa: E402
@@ -76,6 +82,20 @@ class UnifiedMCPServer:
         self.file_agent = EnhancedFileExtractionAgent()
         self.kg_agent = KnowledgeGraphAgent()
         self.web_agent = EnhancedWebAgent()
+        
+        # Initialize advanced analytics agents
+        self.forecasting_agent = AdvancedForecastingAgent()
+        self.causal_agent = CausalAnalysisAgent()
+        self.anomaly_agent = AnomalyDetectionAgent()
+        self.ml_agent = AdvancedMLAgent()
+        
+        # Initialize scenario analysis agent (using existing scenario analysis agent)
+        try:
+            from src.agents.scenario_analysis_agent import ScenarioAnalysisAgent
+            self.scenario_agent = ScenarioAnalysisAgent()
+        except Exception as e:
+            logger.warning(f"⚠️ Could not initialize ScenarioAnalysisAgent: {e}")
+            self.scenario_agent = None
 
         # Initialize MCP server
         self._initialize_mcp()
@@ -169,36 +189,52 @@ class UnifiedMCPServer:
                 logger.error(f"Error extracting text: {e}")
                 return {"success": False, "error": str(e)}
 
-        @self.mcp.tool(description="Content summarization with language support")
-        async def summarize_content(
-            content: str,
-            language: str = "en",
-            summary_length: str = "medium"
+        @self.mcp.tool(description="Advanced multivariate forecasting")
+        async def advanced_forecasting(
+            data: str,
+            target_variables: str,
+            forecast_horizon: int = 10,
+            model_type: str = "ensemble"
         ) -> Dict[str, Any]:
-            """Summarize content with language support."""
+            """Perform advanced multivariate time series forecasting."""
             try:
-                result = await self.text_agent.summarize_content(
-                    content, language, summary_length
+                # Parse data and target variables
+                import json
+                data_list = json.loads(data) if isinstance(data, str) else data
+                target_list = json.loads(target_variables) if isinstance(target_variables, str) else target_variables
+                
+                result = await self.forecasting_agent.forecast(
+                    data=data_list,
+                    target_variables=target_list,
+                    forecast_horizon=forecast_horizon,
+                    model_type=model_type
                 )
                 return {"success": True, "result": result}
             except Exception as e:
-                logger.error(f"Error summarizing content: {e}")
+                logger.error(f"Error in advanced forecasting: {e}")
                 return {"success": False, "error": str(e)}
 
-        @self.mcp.tool(description="Multilingual translation")
-        async def translate_content(
-            content: str,
-            source_language: str = "auto",
-            target_language: str = "en"
+        @self.mcp.tool(description="Causal inference analysis")
+        async def causal_analysis(
+            data: str,
+            variables: str,
+            analysis_type: str = "granger"
         ) -> Dict[str, Any]:
-            """Translate content between languages."""
+            """Perform causal inference analysis."""
             try:
-                result = await self.translation_service.translate(
-                    content, source_language, target_language
+                # Parse data and variables
+                import json
+                data_list = json.loads(data) if isinstance(data, str) else data
+                variables_list = json.loads(variables) if isinstance(variables, str) else variables
+                
+                result = await self.causal_agent.analyze_causality(
+                    data=data_list,
+                    variables=variables_list,
+                    analysis_type=analysis_type
                 )
                 return {"success": True, "result": result}
             except Exception as e:
-                logger.error(f"Error translating content: {e}")
+                logger.error(f"Error in causal analysis: {e}")
                 return {"success": False, "error": str(e)}
 
         @self.mcp.tool(description="Format conversion between types")
@@ -668,7 +704,127 @@ class UnifiedMCPServer:
                 logger.error(f"Error managing configurations: {e}")
                 return {"success": False, "error": str(e)}
 
-        logger.info("✅ Registered 25 unified MCP tools")
+        # Advanced Analytics Tools (5 new tools)
+        @self.mcp.tool(description="Scenario analysis for business planning")
+        async def scenario_analysis(
+            base_data: str,
+            scenarios: str,
+            target_variable: str,
+            analysis_type: str = "impact"
+        ) -> Dict[str, Any]:
+            """Perform scenario analysis for business planning."""
+            try:
+                # Parse data
+                import json
+                base_data_list = json.loads(base_data) if isinstance(base_data, str) else base_data
+                scenarios_list = json.loads(scenarios) if isinstance(scenarios, str) else scenarios
+                
+                result = await self.scenario_agent.analyze_scenarios(
+                    base_data=base_data_list,
+                    scenarios=scenarios_list,
+                    target_variable=target_variable,
+                    analysis_type=analysis_type
+                )
+                return {"success": True, "result": result}
+            except Exception as e:
+                logger.error(f"Error in scenario analysis: {e}")
+                return {"success": False, "error": str(e)}
+
+        @self.mcp.tool(description="Model optimization and hyperparameter tuning")
+        async def model_optimization(
+            model_config: str,
+            optimization_type: str = "hyperparameter",
+            metric: str = "accuracy"
+        ) -> Dict[str, Any]:
+            """Optimize machine learning models."""
+            try:
+                # Parse config
+                import json
+                config_dict = json.loads(model_config) if isinstance(model_config, str) else model_config
+                
+                result = await self.ml_agent.optimize_model(
+                    model_config=config_dict,
+                    optimization_type=optimization_type,
+                    metric=metric
+                )
+                return {"success": True, "result": result}
+            except Exception as e:
+                logger.error(f"Error in model optimization: {e}")
+                return {"success": False, "error": str(e)}
+
+        @self.mcp.tool(description="Feature engineering for machine learning")
+        async def feature_engineering(
+            data: str,
+            features: str,
+            engineering_type: str = "automatic"
+        ) -> Dict[str, Any]:
+            """Perform automated feature engineering."""
+            try:
+                # Parse data and features
+                import json
+                data_list = json.loads(data) if isinstance(data, str) else data
+                features_list = json.loads(features) if isinstance(features, str) else features
+                
+                result = await self.ml_agent.engineer_features(
+                    data=data_list,
+                    features=features_list,
+                    engineering_type=engineering_type
+                )
+                return {"success": True, "result": result}
+            except Exception as e:
+                logger.error(f"Error in feature engineering: {e}")
+                return {"success": False, "error": str(e)}
+
+        @self.mcp.tool(description="Deep learning model training")
+        async def deep_learning_training(
+            data: str,
+            model_type: str = "mlp",
+            task: str = "classification",
+            config: str = None
+        ) -> Dict[str, Any]:
+            """Train deep learning models."""
+            try:
+                # Parse data and config
+                import json
+                data_list = json.loads(data) if isinstance(data, str) else data
+                config_dict = json.loads(config) if config and isinstance(config, str) else config
+                
+                result = await self.ml_agent.create_and_train_model(
+                    data=data_list,
+                    model_type=model_type,
+                    task=task,
+                    config=config_dict
+                )
+                return {"success": True, "result": result}
+            except Exception as e:
+                logger.error(f"Error in deep learning training: {e}")
+                return {"success": False, "error": str(e)}
+
+        @self.mcp.tool(description="AutoML pipeline for automated model selection")
+        async def automl_pipeline(
+            data: str,
+            target: str,
+            task: str = "classification",
+            time_limit: int = 3600
+        ) -> Dict[str, Any]:
+            """Run AutoML pipeline for automated model selection."""
+            try:
+                # Parse data
+                import json
+                data_list = json.loads(data) if isinstance(data, str) else data
+                
+                result = await self.ml_agent.run_automl_pipeline(
+                    data=data_list,
+                    target=target,
+                    task=task,
+                    time_limit=time_limit
+                )
+                return {"success": True, "result": result}
+            except Exception as e:
+                logger.error(f"Error in AutoML pipeline: {e}")
+                return {"success": False, "error": str(e)}
+
+        logger.info("✅ Registered 30 unified MCP tools (including 5 new advanced analytics tools)")
 
     def _detect_content_type(self, content: str) -> str:
         """Detect content type based on content or file extension."""
