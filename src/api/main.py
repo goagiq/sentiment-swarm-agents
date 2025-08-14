@@ -117,6 +117,7 @@ class PDFRequest(BaseModel):
     model_preference: Optional[str] = None
     reflection_enabled: bool = True
     max_iterations: int = 3
+    confidence_threshold: float = 0.8
 
 
 class SemanticSearchRequest(BaseModel):
@@ -298,7 +299,57 @@ class ActionableInsightsRequest(BaseModel):
 
 # Phase 4: Export & Automation Request Models
 
+class DataIngestionRequest(BaseModel):
+    """Request model for data ingestion."""
+    content: str
+    metadata: Dict[str, Any] = {}
+    language_code: Optional[str] = None
+    auto_detect_language: bool = True
+    generate_summary: bool = True
+    extract_entities: bool = True
+    create_knowledge_graph: bool = True
+    store_in_vector_db: bool = True
+
+
+class URLIngestionRequest(BaseModel):
+    """Request model for URL-based data ingestion."""
+    url: str
+    metadata: Dict[str, Any] = {}
+    language_code: Optional[str] = None
+    auto_detect_language: bool = True
+    generate_summary: bool = True
+    extract_entities: bool = True
+    create_knowledge_graph: bool = True
+    store_in_vector_db: bool = True
+
+
+class FileIngestionRequest(BaseModel):
+    """Request model for file-based data ingestion."""
+    file_path: str
+    metadata: Dict[str, Any] = {}
+    language_code: Optional[str] = None
+    auto_detect_language: bool = True
+    generate_summary: bool = True
+    extract_entities: bool = True
+    create_knowledge_graph: bool = True
+    store_in_vector_db: bool = True
+
+
+class LanguageConfigRequest(BaseModel):
+    """Request model for language configuration information."""
+    language_code: str
+
+
+class PDFDatabaseRequest(BaseModel):
+    """Request model for PDF to database processing."""
+    pdf_path: str
+    language: str = "en"
+    generate_report: bool = True
+    output_path: Optional[str] = None
+
+
 class ExportRequest(BaseModel):
+    """Request model for exporting analysis results."""
     data: Dict[str, Any]
     export_formats: List[str] = ["json"]
     include_visualizations: bool = True
@@ -306,6 +357,7 @@ class ExportRequest(BaseModel):
 
 
 class AutomatedReportRequest(BaseModel):
+    """Request model for automated report generation."""
     report_type: str = "business"
     schedule: str = "weekly"
     recipients: List[str] = []
@@ -313,6 +365,7 @@ class AutomatedReportRequest(BaseModel):
 
 
 class ShareReportRequest(BaseModel):
+    """Request model for sharing reports."""
     report_data: Dict[str, Any]
     sharing_methods: List[str] = ["api"]
     recipients: List[str] = []
@@ -320,56 +373,63 @@ class ShareReportRequest(BaseModel):
 
 
 class ScheduleReportRequest(BaseModel):
+    """Request model for scheduling reports."""
     report_type: str
     schedule: str
     recipients: List[str] = None
     start_date: str = None
 
-# Phase 5: Semantic Search & Agent Reflection Request Models
 
 class QueryRoutingRequest(BaseModel):
+    """Request model for query routing."""
     query: str
     content_data: Dict[str, Any] = {}
     routing_strategy: str = "accuracy"
     include_fallback: bool = True
 
+
 class ResultCombinationRequest(BaseModel):
+    """Request model for combining results."""
     results: List[Dict[str, Any]]
     combination_strategy: str = "weighted"
     include_confidence_scores: bool = True
 
+
 class AgentCapabilitiesRequest(BaseModel):
+    """Request model for agent capabilities."""
     agent_ids: Optional[List[str]] = None
     include_performance_metrics: bool = True
 
+
 class AgentReflectionRequest(BaseModel):
+    """Request model for agent reflection."""
     query: str
     initial_response: Dict[str, Any]
     reflection_type: str = "comprehensive"
     include_agent_questioning: bool = True
 
+
 class AgentQuestioningRequest(BaseModel):
+    """Request model for agent questioning."""
     source_agent: str
     target_agent: str
     question: str
     context: Dict[str, Any] = {}
     response_format: str = "structured"
 
+
 class ReflectionInsightsRequest(BaseModel):
+    """Request model for reflection insights."""
     query_id: str
     include_agent_feedback: bool = True
     include_confidence_improvements: bool = True
 
+
 class ResponseValidationRequest(BaseModel):
+    """Request model for response validation."""
     response: Dict[str, Any]
     validation_criteria: List[str] = ["accuracy", "completeness", "relevance"]
     include_improvement_suggestions: bool = True
-
-class PDFDatabaseRequest(BaseModel):
-    pdf_path: str
-    language: str = "en"
-    generate_report: bool = True
-    output_path: Optional[str] = None
 
 
 # Response models
@@ -2070,6 +2130,129 @@ except Exception as e:
     logger.warning(f"⚠️ Could not include advanced analytics routes: {e}")
     # Continue without advanced analytics routes for now
 
+# Data Ingestion Endpoints
+@app.post("/ingest/content")
+async def ingest_content_endpoint(request: DataIngestionRequest):
+    """Ingest content with full multilingual processing pipeline."""
+    try:
+        from src.core.data_ingestion_service import data_ingestion_service
+        
+        result = await data_ingestion_service.ingest_content(
+            content=request.content,
+            metadata=request.metadata,
+            language_code=request.language_code,
+            auto_detect_language=request.auto_detect_language,
+            generate_summary=request.generate_summary,
+            extract_entities=request.extract_entities,
+            create_knowledge_graph=request.create_knowledge_graph,
+            store_in_vector_db=request.store_in_vector_db
+        )
+        
+        return {
+            "success": result["success"],
+            "result": result,
+            "message": "Content ingestion completed successfully" if result["success"] else f"Ingestion failed: {result.get('error', 'Unknown error')}"
+        }
+    except Exception as e:
+        logger.error(f"Content ingestion error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Content ingestion failed: {str(e)}")
+
+
+@app.post("/ingest/url")
+async def ingest_url_endpoint(request: URLIngestionRequest):
+    """Ingest content from a URL."""
+    try:
+        from src.core.data_ingestion_service import data_ingestion_service
+        
+        result = await data_ingestion_service.ingest_from_url(
+            url=request.url,
+            metadata=request.metadata,
+            language_code=request.language_code,
+            auto_detect_language=request.auto_detect_language,
+            generate_summary=request.generate_summary,
+            extract_entities=request.extract_entities,
+            create_knowledge_graph=request.create_knowledge_graph,
+            store_in_vector_db=request.store_in_vector_db
+        )
+        
+        return {
+            "success": result["success"],
+            "result": result,
+            "message": "URL ingestion completed successfully" if result["success"] else f"Ingestion failed: {result.get('error', 'Unknown error')}"
+        }
+    except Exception as e:
+        logger.error(f"URL ingestion error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"URL ingestion failed: {str(e)}")
+
+
+@app.post("/ingest/file")
+async def ingest_file_endpoint(request: FileIngestionRequest):
+    """Ingest content from a file."""
+    try:
+        from src.core.data_ingestion_service import data_ingestion_service
+        
+        result = await data_ingestion_service.ingest_from_file(
+            file_path=request.file_path,
+            metadata=request.metadata,
+            language_code=request.language_code,
+            auto_detect_language=request.auto_detect_language,
+            generate_summary=request.generate_summary,
+            extract_entities=request.extract_entities,
+            create_knowledge_graph=request.create_knowledge_graph,
+            store_in_vector_db=request.store_in_vector_db
+        )
+        
+        return {
+            "success": result["success"],
+            "result": result,
+            "message": "File ingestion completed successfully" if result["success"] else f"Ingestion failed: {result.get('error', 'Unknown error')}"
+        }
+    except Exception as e:
+        logger.error(f"File ingestion error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"File ingestion failed: {str(e)}")
+
+
+@app.get("/ingest/languages")
+async def get_supported_languages_endpoint():
+    """Get list of supported languages for data ingestion."""
+    try:
+        from src.core.data_ingestion_service import data_ingestion_service
+        
+        languages = data_ingestion_service.get_supported_languages()
+        return {
+            "success": True,
+            "languages": languages,
+            "count": len(languages),
+            "message": f"Found {len(languages)} supported languages"
+        }
+    except Exception as e:
+        logger.error(f"Get languages error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get supported languages: {str(e)}")
+
+
+@app.post("/ingest/language-config")
+async def get_language_config_endpoint(request: LanguageConfigRequest):
+    """Get detailed configuration for a specific language."""
+    try:
+        from src.core.data_ingestion_service import data_ingestion_service
+        
+        config_info = data_ingestion_service.get_language_config_info(request.language_code)
+        
+        if "error" in config_info:
+            raise HTTPException(status_code=400, detail=config_info["error"])
+        
+        return {
+            "success": True,
+            "config": config_info,
+            "message": f"Language configuration for {request.language_code}"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get language config error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get language configuration: {str(e)}")
+
+
 # Root endpoint
 @app.get("/")
 async def root():
@@ -2133,6 +2316,11 @@ async def root():
             "fault_detection": "/analytics/fault-detection",
             "performance_optimization": "/analytics/performance",
             "apply_optimizations": "/analytics/optimize",
-            "advanced_analytics": "/advanced-analytics"
+            "advanced_analytics": "/advanced-analytics",
+            "ingest_content": "/ingest/content",
+            "ingest_url": "/ingest/url",
+            "ingest_file": "/ingest/file",
+            "get_languages": "/ingest/languages",
+            "get_language_config": "/ingest/language-config"
         }
     }

@@ -205,6 +205,9 @@ async def test_stream_processor():
     
     processor.register_consumer("default", data_consumer)
     
+    # Start processing
+    await processor.start_processing()
+    
     # Add data points
     for i in range(20):
         processor.add_data_point(
@@ -215,6 +218,9 @@ async def test_stream_processor():
     
     # Wait for processing
     await asyncio.sleep(1.0)
+    
+    # Stop processing
+    await processor.stop_processing()
     
     # Get processing statistics
     stats = processor.get_processing_stats()

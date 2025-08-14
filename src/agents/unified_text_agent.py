@@ -351,7 +351,6 @@ class UnifiedTextAgent(BaseAgent):
         else:
             return str(content)
     
-    @tool
     async def analyze_text_sentiment(self, text: str) -> dict:
         """
         Analyze the sentiment of the given text using Ollama.
@@ -407,7 +406,6 @@ class UnifiedTextAgent(BaseAgent):
             logger.error(f"Ollama sentiment analysis failed: {e}")
             return await self.fallback_sentiment_analysis(text)
     
-    @tool
     async def extract_text_features(self, text: str) -> dict:
         """
         Extract text features for analysis.
@@ -841,6 +839,187 @@ class UnifiedTextAgent(BaseAgent):
                 "status": "error",
                 "error": str(e),
                 "detected_language": "unknown"
+            }
+
+    # Interface methods for MCP server compatibility
+    async def analyze_sentiment(self, text: str, language: str = "en") -> dict:
+        """
+        Analyze sentiment of text content - interface method for MCP server.
+        
+        Args:
+            text: The text to analyze
+            language: Language of the text
+            
+        Returns:
+            Sentiment analysis result
+        """
+        try:
+            # Use the existing analyze_text_sentiment method
+            result = await self.analyze_text_sentiment(text)
+            return result
+        except Exception as e:
+            logger.error(f"Sentiment analysis failed: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "sentiment": "neutral",
+                "confidence": 0.0
+            }
+
+    async def process_text(self, content: str, options: dict = None) -> dict:
+        """
+        Process text content - interface method for MCP server.
+        
+        Args:
+            content: The text content to process
+            options: Processing options
+            
+        Returns:
+            Processing result
+        """
+        try:
+            # Create analysis request
+            request = AnalysisRequest(
+                data_type=DataType.TEXT,
+                content=content,
+                language=options.get("language", "en") if options else "en",
+                metadata=options or {}
+            )
+            
+            # Process using the main process method
+            result = await self.process(request)
+            
+            return {
+                "status": "success",
+                "sentiment": result.sentiment.label if result.sentiment else "neutral",
+                "confidence": result.sentiment.confidence if result.sentiment else 0.0,
+                "processing_time": result.processing_time,
+                "metadata": result.metadata,
+                "extracted_text": result.extracted_text
+            }
+        except Exception as e:
+            logger.error(f"Text processing failed: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "sentiment": "neutral",
+                "confidence": 0.0
+            }
+
+    async def extract_entities(self, text: str, entity_types: List[str] = None) -> dict:
+        """
+        Extract entities from text content - interface method for MCP server.
+        
+        Args:
+            text: The text to analyze
+            entity_types: Types of entities to extract
+            
+        Returns:
+            Entity extraction result
+        """
+        try:
+            # Create analysis request for entity extraction
+            request = AnalysisRequest(
+                data_type=DataType.TEXT,
+                content=text,
+                language="en",
+                metadata={
+                    "extract_entities": True,
+                    "entity_types": entity_types or ["PERSON", "ORG", "LOC", "MISC"]
+                }
+            )
+            
+            # Process the request
+            result = await self.process(request)
+            
+            # Extract entities from result metadata
+            entities = result.metadata.get('entities', []) if result.metadata else []
+            
+            return {
+                "status": "success",
+                "entities": entities,
+                "total_entities": len(entities),
+                "processing_time": result.processing_time
+            }
+        except Exception as e:
+            logger.error(f"Entity extraction failed: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "entities": []
+            }
+
+    async def analyze_business_intelligence(self, content: str, analysis_type: str = "comprehensive") -> dict:
+        """
+        Analyze business intelligence from content - interface method for MCP server.
+        
+        Args:
+            content: The content to analyze
+            analysis_type: Type of analysis to perform
+            
+        Returns:
+            Business intelligence analysis result
+        """
+        try:
+            # Create analysis request for business intelligence
+            request = AnalysisRequest(
+                data_type=DataType.TEXT,
+                content=content,
+                language="en",
+                metadata={
+                    "business_intelligence": True,
+                    "analysis_type": analysis_type,
+                    "include_insights": True,
+                    "include_recommendations": True
+                }
+            )
+            
+            # Process the request
+            result = await self.process(request)
+            
+            # Extract business intelligence from result
+            insights = result.metadata.get('insights', []) if result.metadata else []
+            recommendations = result.metadata.get('recommendations', []) if result.metadata else []
+            
+            return {
+                "status": "success",
+                "analysis_type": analysis_type,
+                "insights": insights,
+                "recommendations": recommendations,
+                "sentiment": result.sentiment.label if result.sentiment else "neutral",
+                "confidence": result.sentiment.confidence if result.sentiment else 0.0,
+                "processing_time": result.processing_time
+            }
+        except Exception as e:
+            logger.error(f"Business intelligence analysis failed: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "insights": [],
+                "recommendations": []
+            }
+
+    async def summarize_text(self, text: str, summary_length: str = "medium") -> dict:
+        """
+        Summarize text content - interface method for MCP server.
+        
+        Args:
+            text: The text to summarize
+            summary_length: Length of summary (short, medium, long)
+            
+        Returns:
+            Text summarization result
+        """
+        try:
+            # Use the existing generate_text_summary method
+            result = await self.generate_text_summary(text, summary_length)
+            return result
+        except Exception as e:
+            logger.error(f"Text summarization failed: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "summary": "Failed to generate summary"
             }
 
     # Summarization tools

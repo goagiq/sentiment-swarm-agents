@@ -71,7 +71,7 @@ class AnomalyDetectionAgent(StrandsBaseAgent):
                 "local_outlier_factor",
                 "statistical"
             ],
-            "data_types": [DataType.TEXT, DataType.NUMERICAL, DataType.TABULAR],
+            "data_types": [DataType.TEXT, DataType.NUMERICAL],
             "version": "1.0.0"
         })
         
@@ -94,7 +94,7 @@ class AnomalyDetectionAgent(StrandsBaseAgent):
     async def can_process(self, request: AnalysisRequest) -> bool:
         """Check if this agent can process the request"""
         return (
-            request.data_type in [DataType.TEXT, DataType.NUMERICAL, DataType.TABULAR] and
+            request.data_type in [DataType.TEXT, DataType.NUMERICAL] and
             "anomaly" in request.analysis_type.lower()
         )
 
@@ -124,7 +124,7 @@ class AnomalyDetectionAgent(StrandsBaseAgent):
                 
                 # Create analysis result
                 analysis_result = AnalysisResult(
-                    request_id=request.request_id,
+                    request_id=request.id,
                     agent_id=self.agent_id,
                     result_type="anomaly_detection",
                     data=result,

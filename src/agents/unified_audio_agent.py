@@ -793,3 +793,118 @@ class UnifiedAudioAgent(BaseAgent):
             "large_file_processor_available": hasattr(self, 'large_file_processor')
         })
         return base_status
+
+    # Interface methods for MCP server compatibility
+    async def process_audio(self, content: str, options: dict = None) -> dict:
+        """
+        Process audio content - interface method for MCP server.
+        
+        Args:
+            content: The audio content to process
+            options: Processing options
+            
+        Returns:
+            Processing result
+        """
+        try:
+            # Create analysis request
+            request = AnalysisRequest(
+                data_type=DataType.AUDIO,
+                content=content,
+                language=options.get("language", "en") if options else "en",
+                metadata=options or {}
+            )
+            
+            # Process using the main process method
+            result = await self.process(request)
+            
+            return {
+                "status": "success",
+                "sentiment": result.sentiment.label if result.sentiment else "neutral",
+                "confidence": result.sentiment.confidence if result.sentiment else 0.0,
+                "processing_time": result.processing_time,
+                "metadata": result.metadata,
+                "extracted_text": result.extracted_text
+            }
+        except Exception as e:
+            logger.error(f"Audio processing failed: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "sentiment": "neutral",
+                "confidence": 0.0
+            }
+
+    async def transcribe_audio(self, content: str) -> dict:
+        """
+        Transcribe audio content - interface method for MCP server.
+        
+        Args:
+            content: The audio content to transcribe
+            
+        Returns:
+            Transcription result
+        """
+        try:
+            # Use the existing enhanced transcription method
+            result = await self.transcribe_audio_enhanced(content)
+            return result
+        except Exception as e:
+            logger.error(f"Audio transcription failed: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "transcript": ""
+            }
+
+    async def summarize_audio(self, content: str, summary_length: str = "medium") -> dict:
+        """
+        Summarize audio content - interface method for MCP server.
+        
+        Args:
+            content: The audio content to summarize
+            summary_length: Length of summary (short, medium, long)
+            
+        Returns:
+            Audio summarization result
+        """
+        try:
+            # Create analysis request for audio summarization
+            request = AnalysisRequest(
+                data_type=DataType.AUDIO,
+                content=content,
+                language="en",
+                metadata={
+                    "summary_type": summary_length,
+                    "include_key_points": True,
+                    "include_entities": True
+                }
+            )
+            
+            # Process the request
+            result = await self.process(request)
+            
+            # Extract summary from result
+            summary = ""
+            if hasattr(result, 'summary') and result.summary:
+                summary = result.summary
+            elif hasattr(result, 'sentiment') and result.sentiment.reasoning:
+                summary = result.sentiment.reasoning
+            else:
+                summary = "Audio summary generated successfully"
+            
+            return {
+                "status": "success",
+                "summary_type": summary_length,
+                "summary": summary,
+                "key_points": result.metadata.get('key_points', []) if result.metadata else [],
+                "entities": result.metadata.get('entities', []) if result.metadata else [],
+                "processing_time": result.processing_time
+            }
+        except Exception as e:
+            logger.error(f"Audio summarization failed: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "summary": "Failed to generate audio summary"
+            }

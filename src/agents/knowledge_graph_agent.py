@@ -369,11 +369,25 @@ class KnowledgeGraphAgent(StrandsBaseAgent):
         
         return unique_entities, all_relationships
     
-    async def extract_entities(self, text: str, language: str = "en") -> dict:
+    async def extract_entities(self, text: str, language: str = "en", entity_types: List[str] = None) -> dict:
         """Extract entities from text using isolated language-specific processing."""
         try:
             # Use the new language processing service for isolated processing
             result = self.language_service.extract_entities_with_config(text, language)
+            
+            # Import and use the entity types configuration
+            from src.config.entity_types_config import entity_types_config
+            
+            # Filter entities by requested types if specified
+            if entity_types:
+                # Validate and normalize entity types using configuration
+                validated_types = entity_types_config.validate_entity_types(entity_types, language)
+                # Filter the result to only include requested entity types
+                filtered_entities = {}
+                for entity_type, entity_list in result["entities"].items():
+                    if entity_type.upper() in validated_types:
+                        filtered_entities[entity_type] = entity_list
+                result["entities"] = filtered_entities
             
             # Convert to expected format
             entities = []
@@ -411,7 +425,7 @@ class KnowledgeGraphAgent(StrandsBaseAgent):
                             })
                     else:
                         # Use general enhanced extraction
-                        enhanced_result = await self.entity_extraction_agent.extract_entities(text, language)
+                        enhanced_result = await self.entity_extraction_agent.extract_entities(text)
                         enhanced_entities = enhanced_result.get("entities", [])
                         for entity in enhanced_entities:
                             entities.append({
@@ -3186,6 +3200,114 @@ Notes:
             }
         }
     
+    async def analyze_graph_communities(self) -> dict:
+        """Analyze graph communities and clustering."""
+        try:
+            if self.graph.number_of_nodes() == 0:
+                return {
+                    "communities": [],
+                    "community_count": 0,
+                    "largest_community_size": 0,
+                    "average_community_size": 0,
+                    "modularity": 0,
+                    "error": "Graph is empty"
+                }
+            
+            # Convert to undirected graph for community detection
+            undirected_graph = self.graph.to_undirected()
+            
+            # Use Louvain method for community detection
+            try:
+                import community
+                partition = community.best_partition(undirected_graph)
+                
+                # Group nodes by community
+                communities = {}
+                for node, community_id in partition.items():
+                    if community_id not in communities:
+                        communities[community_id] = []
+                    communities[community_id].append(node)
+                
+                # Calculate community statistics
+                community_sizes = [len(nodes) for nodes in communities.values()]
+                largest_community_size = max(community_sizes) if community_sizes else 0
+                average_community_size = sum(community_sizes) / len(community_sizes) if community_sizes else 0
+                
+                # Calculate modularity
+                modularity = community.modularity(partition, undirected_graph)
+                
+                # Format communities for output
+                formatted_communities = []
+                for community_id, nodes in communities.items():
+                    # Get sample entities from this community
+                    sample_entities = []
+                    for node in nodes[:5]:  # Limit to 5 samples
+                        attrs = self.graph.nodes[node]
+                        sample_entities.append({
+                            "name": node,
+                            "type": attrs.get("type", "unknown"),
+                            "language": attrs.get("language", "unknown")
+                        })
+                    
+                    formatted_communities.append({
+                        "community_id": community_id,
+                        "size": len(nodes),
+                        "sample_entities": sample_entities,
+                        "total_entities": len(nodes)
+                    })
+                
+                return {
+                    "communities": formatted_communities,
+                    "community_count": len(communities),
+                    "largest_community_size": largest_community_size,
+                    "average_community_size": average_community_size,
+                    "modularity": modularity,
+                    "total_nodes": self.graph.number_of_nodes()
+                }
+                
+            except ImportError:
+                # Fallback to connected components if community module not available
+                connected_components = list(nx.connected_components(undirected_graph))
+                
+                formatted_communities = []
+                for i, component in enumerate(connected_components):
+                    sample_entities = []
+                    for node in list(component)[:5]:
+                        attrs = self.graph.nodes[node]
+                        sample_entities.append({
+                            "name": node,
+                            "type": attrs.get("type", "unknown"),
+                            "language": attrs.get("language", "unknown")
+                        })
+                    
+                    formatted_communities.append({
+                        "community_id": i,
+                        "size": len(component),
+                        "sample_entities": sample_entities,
+                        "total_entities": len(component)
+                    })
+                
+                return {
+                    "communities": formatted_communities,
+                    "community_count": len(connected_components),
+                    "largest_community_size": max(len(c) for c in connected_components) if connected_components else 0,
+                    "average_community_size": sum(len(c) for c in connected_components) / len(connected_components) if connected_components else 0,
+                    "modularity": 0,  # Not available with connected components
+                    "total_nodes": self.graph.number_of_nodes(),
+                    "note": "Using connected components (community module not available)"
+                }
+                
+        except Exception as e:
+            logger.error(f"Error analyzing graph communities: {e}")
+            return {
+                "communities": [],
+                "community_count": 0,
+                "largest_community_size": 0,
+                "average_community_size": 0,
+                "modularity": 0,
+                "error": str(e)
+            }
+
     def _get_graph_stats(self) -> Dict:
         """Get current graph statistics including language distribution."""
         if self.graph.number_of_nodes() == 0:
@@ -3269,3 +3391,54 @@ Notes:
             logger.debug(f"Graph saved with {self.graph.number_of_nodes()} nodes and {self.graph.number_of_edges()} edges")
         except Exception as e:
             logger.error(f"Failed to save graph: {e}")
+
+    # Interface method for MCP server compatibility
+    async def generate_knowledge_graph(self, content: str, content_type: str = "text") -> dict:
+        """
+        Generate knowledge graph from content - interface method for MCP server.
+        
+        Args:
+            content: The content to generate knowledge graph from
+            content_type: Type of content (text, audio, video, etc.)
+            
+        Returns:
+            Knowledge graph generation result
+        """
+        try:
+            # Create analysis request
+            request = AnalysisRequest(
+                data_type=DataType(content_type),
+                content=content,
+                language="en",
+                metadata={
+                    "generate_knowledge_graph": True,
+                    "include_entities": True,
+                    "include_relationships": True
+                }
+            )
+            
+            # Process using the main process method
+            result = await self.process(request)
+            
+            # Get graph statistics
+            graph_stats = self._get_graph_stats()
+            
+            return {
+                "status": "success",
+                "content_type": content_type,
+                "graph_stats": graph_stats,
+                "entities_extracted": result.metadata.get('entities_count', 0) if result.metadata else 0,
+                "relationships_mapped": result.metadata.get('relationships_count', 0) if result.metadata else 0,
+                "processing_time": result.processing_time,
+                "metadata": result.metadata
+            }
+        except Exception as e:
+            logger.error(f"Knowledge graph generation failed: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "content_type": content_type,
+                "graph_stats": {"nodes": 0, "edges": 0},
+                "entities_extracted": 0,
+                "relationships_mapped": 0
+            }

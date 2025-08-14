@@ -130,7 +130,66 @@ class StandaloneMCPServer:
                 elif content_type == "video":
                     result = await self.vision_agent.process_video(content, options or {})
                 elif content_type == "pdf":
-                    result = await self.file_agent.extract_text_from_pdf(content, options or {})
+                    # For PDF files, content should be a file path
+                    if not content.endswith('.pdf'):
+                        # If content is not a file path, assume it's a file path in the data directory
+                        import os
+                        from pathlib import Path
+                        data_dir = Path("data")
+                        pdf_path = data_dir / content
+                        if not pdf_path.exists():
+                            pdf_path = data_dir / f"{content}.pdf"
+                        if pdf_path.exists():
+                            content = str(pdf_path)
+                        else:
+                            return {"success": False, "error": f"PDF file not found: {content}"}
+                    
+                    # Enhanced PDF processing with comprehensive language detection
+                    pdf_options = options or {}
+                    
+                    # Extract a sample for language detection
+                    try:
+                        sample_result = await self.file_agent.extract_text_from_pdf(content, {"sample_only": True})
+                        if sample_result.get("status") == "success":
+                            sample_text = sample_result.get("extracted_text", "")[:1000]
+                            if sample_text:
+                                # Detect language and apply appropriate processing
+                                detected_language = self._detect_language_from_text(sample_text)
+                                pdf_options["language"] = detected_language
+                                
+                                # Apply language-specific processing
+                                if detected_language == "zh":
+                                    # Chinese language processing
+                                    from config.language_config.chinese_config import ChineseConfig
+                                    chinese_config = ChineseConfig()
+                                    pdf_type = chinese_config.detect_chinese_pdf_type(sample_text)
+                                    pdf_options["pdf_type"] = pdf_type
+                                    pdf_options["enhanced_processing"] = True
+                                    logger.info(f"Detected Chinese PDF type: {pdf_type}")
+                                    
+                                elif detected_language == "ru":
+                                    # Russian language processing
+                                    from config.language_config.russian_config import RussianConfig
+                                    russian_config = RussianConfig()
+                                    pdf_options["enhanced_processing"] = True
+                                    logger.info("Detected Russian PDF - applying Russian-specific processing")
+                                    
+                                elif detected_language in ["ar", "ja", "ko", "hi"]:
+                                    # Other supported languages
+                                    pdf_options["enhanced_processing"] = True
+                                    logger.info(f"Detected {detected_language} PDF - applying language-specific processing")
+                                    
+                                else:
+                                    # Default to English/Latin processing
+                                    pdf_options["language"] = "en"
+                                    logger.info("Detected English/Latin PDF - using standard processing")
+                                    
+                    except Exception as e:
+                        logger.warning(f"Language detection failed: {e}")
+                        # Fallback to specified language or default
+                        pdf_options["language"] = language if language != "auto" else "en"
+                    
+                    result = await self.file_agent.extract_text_from_pdf(content, pdf_options)
                 elif content_type == "website":
                     result = await self.web_agent.scrape_website(content, options or {})
                 else:
@@ -152,7 +211,68 @@ class StandaloneMCPServer:
                     content_type = self._detect_content_type(content)
 
                 if content_type == "pdf":
-                    result = await self.file_agent.extract_text_from_pdf(content)
+                    # For PDF files, content should be a file path
+                    if not content.endswith('.pdf'):
+                        # If content is not a file path, assume it's a file path in the data directory
+                        import os
+                        from pathlib import Path
+                        data_dir = Path("data")
+                        pdf_path = data_dir / content
+                        if not pdf_path.exists():
+                            pdf_path = data_dir / f"{content}.pdf"
+                        if pdf_path.exists():
+                            content = str(pdf_path)
+                        else:
+                            return {"success": False, "error": f"PDF file not found: {content}"}
+                    
+                    # Enhanced PDF text extraction with comprehensive language detection
+                    pdf_options = {}
+                    
+                    # Extract a sample for language detection
+                    try:
+                        sample_result = await self.file_agent.extract_text_from_pdf(content, {"sample_only": True})
+                        if sample_result.get("status") == "success":
+                            sample_text = sample_result.get("extracted_text", "")[:500]
+                            if sample_text:
+                                # Detect language and apply appropriate processing
+                                detected_language = self._detect_language_from_text(sample_text)
+                                pdf_options["language"] = detected_language
+                                
+                                # Apply language-specific processing
+                                if detected_language == "zh":
+                                    # Chinese language processing
+                                    from config.language_config.chinese_config import ChineseConfig
+                                    chinese_config = ChineseConfig()
+                                    pdf_type = chinese_config.detect_chinese_pdf_type(sample_text)
+                                    pdf_options["pdf_type"] = pdf_type
+                                    pdf_options["enhanced_processing"] = True
+                                    logger.info(f"Detected Chinese PDF type: {pdf_type}")
+                                    
+                                elif detected_language == "ru":
+                                    # Russian language processing
+                                    from config.language_config.russian_config import RussianConfig
+                                    russian_config = RussianConfig()
+                                    pdf_options["enhanced_processing"] = True
+                                    logger.info("Detected Russian PDF - applying Russian-specific processing")
+                                    
+                                elif detected_language in ["ar", "ja", "ko", "hi"]:
+                                    # Other supported languages
+                                    pdf_options["enhanced_processing"] = True
+                                    logger.info(f"Detected {detected_language} PDF - applying language-specific processing")
+                                    
+                                else:
+                                    # Default to English/Latin processing
+                                    pdf_options["language"] = "en"
+                                    logger.info("Detected English/Latin PDF - using standard processing")
+                                    
+                    except Exception as e:
+                        logger.warning(f"Language detection failed: {e}")
+                        # Fallback to default language
+                        pdf_options["language"] = "en"
+                    except Exception as e:
+                        logger.warning(f"Language detection failed: {e}")
+                    
+                    result = await self.file_agent.extract_text_from_pdf(content, pdf_options)
                 elif content_type == "image":
                     result = await self.vision_agent.extract_text_from_image(content)
                 elif content_type == "audio":
@@ -342,7 +462,7 @@ class StandaloneMCPServer:
         ) -> Dict[str, Any]:
             """Store content in vector database."""
             try:
-                result = await self.vector_store.store_document(content, metadata or {})
+                result = await self.vector_store.store_content(content, metadata or {})
                 return {"success": True, "result": result}
             except Exception as e:
                 logger.error(f"Error storing in vector DB: {e}")
@@ -394,9 +514,10 @@ class StandaloneMCPServer:
         # Reporting & Export Tools
         @self.mcp.tool(description="Generate comprehensive reports")
         async def generate_report(
-            report_type: str,
-            data_source: str,
-            parameters: Dict[str, Any] = None
+            content: str,
+            report_type: str = "comprehensive",
+            language: str = "en",
+            options: Dict[str, Any] = None
         ) -> Dict[str, Any]:
             """Generate comprehensive reports."""
             try:
@@ -526,6 +647,48 @@ class StandaloneMCPServer:
             return "image"
         else:
             return "text"
+    
+    def _detect_language_from_text(self, text: str) -> str:
+        """Detect language from text content using character analysis."""
+        if not text:
+            return "en"
+        
+        # Count characters by script
+        russian_chars = sum(1 for char in text if '\u0400' <= char <= '\u04FF')
+        chinese_chars = sum(1 for char in text if '\u4e00' <= char <= '\u9fff')
+        arabic_chars = sum(1 for char in text if '\u0600' <= char <= '\u06FF')
+        japanese_chars = sum(1 for char in text if '\u3040' <= char <= '\u309F' or '\u30A0' <= char <= '\u30FF')
+        korean_chars = sum(1 for char in text if '\uAC00' <= char <= '\uD7AF')
+        hindi_chars = sum(1 for char in text if '\u0900' <= char <= '\u097F')
+        
+        # Determine language based on character counts
+        total_chars = len(text)
+        if total_chars == 0:
+            return "en"
+        
+        # Calculate percentages
+        russian_pct = russian_chars / total_chars if total_chars > 0 else 0
+        chinese_pct = chinese_chars / total_chars if total_chars > 0 else 0
+        arabic_pct = arabic_chars / total_chars if total_chars > 0 else 0
+        japanese_pct = japanese_chars / total_chars if total_chars > 0 else 0
+        korean_pct = korean_chars / total_chars if total_chars > 0 else 0
+        hindi_pct = hindi_chars / total_chars if total_chars > 0 else 0
+        
+        # Language detection thresholds
+        if russian_pct > 0.1 or russian_chars > 20:
+            return "ru"
+        elif chinese_pct > 0.1 or chinese_chars > 20:
+            return "zh"
+        elif arabic_pct > 0.1 or arabic_chars > 20:
+            return "ar"
+        elif japanese_pct > 0.1 or japanese_chars > 20:
+            return "ja"
+        elif korean_pct > 0.1 or korean_chars > 20:
+            return "ko"
+        elif hindi_pct > 0.1 or hindi_chars > 20:
+            return "hi"
+        else:
+            return "en"  # Default to English/Latin
 
     def start(self, host: str = "localhost", port: int = 8000):
         """Start the standalone MCP server."""

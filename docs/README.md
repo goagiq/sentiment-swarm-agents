@@ -6,72 +6,90 @@ This directory contains comprehensive documentation for the Sentiment project. A
 
 ## 🎯 **Quick Start**
 
-1. **New to the project?** Start with [PROJECT_DESIGN_FRAMEWORK.md](../PROJECT_DESIGN_FRAMEWORK.md)
-2. **Want to deploy?** See [PRODUCTION_DEPLOYMENT_GUIDE.md](./PRODUCTION_DEPLOYMENT_GUIDE.md)
+1. **New to the project?** Start with [PROJECT_DESIGN_FRAMEWORK.md](./PROJECT_DESIGN_FRAMEWORK.md)
+2. **Want to deploy?** See [guides/PRODUCTION_DEPLOYMENT_GUIDE.md](./guides/PRODUCTION_DEPLOYMENT_GUIDE.md)
 3. **Need help?** Check [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
 4. **Current status?** Review [PROJECT_MASTER_STATUS.md](./PROJECT_MASTER_STATUS.md)
 
 ## 📋 **Documentation Categories**
 
 ### **🏗️ Project Framework & Status**
-- **[PROJECT_DESIGN_FRAMEWORK.md](../PROJECT_DESIGN_FRAMEWORK.md)** - Main design framework and standards
+- **[PROJECT_DESIGN_FRAMEWORK.md](./PROJECT_DESIGN_FRAMEWORK.md)** - Main design framework and standards
 - **[PROJECT_MASTER_STATUS.md](./PROJECT_MASTER_STATUS.md)** - Comprehensive project status (consolidated)
-- **[PROJECT_CLEANUP_SUMMARY.md](./PROJECT_CLEANUP_SUMMARY.md)** - Previous cleanup activities
 
 ### **🚀 Deployment & Production**
-- **[PRODUCTION_DEPLOYMENT_GUIDE.md](./PRODUCTION_DEPLOYMENT_GUIDE.md)** - Production deployment instructions
-- **[DEPLOYMENT_WITH_OPTIMIZATIONS.md](./DEPLOYMENT_WITH_OPTIMIZATIONS.md)** - Optimized deployment procedures
+- **[guides/PRODUCTION_DEPLOYMENT_GUIDE.md](./guides/PRODUCTION_DEPLOYMENT_GUIDE.md)** - Production deployment instructions
+- **[guides/DEPLOYMENT_WITH_OPTIMIZATIONS.md](./guides/DEPLOYMENT_WITH_OPTIMIZATIONS.md)** - Optimized deployment procedures
 - **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - Problem resolution and debugging
-- **[PRODUCTION_READINESS_SUMMARY.md](./PRODUCTION_READINESS_SUMMARY.md)** - Production readiness checklist
+- **[checklists/PRODUCTION_READINESS_CHECKLIST.md](./checklists/PRODUCTION_READINESS_CHECKLIST.md)** - Production readiness checklist
 
 ### **⚙️ Configuration & Management**
-- **[CONFIGURATION_MANAGEMENT_GUIDE.md](./CONFIGURATION_MANAGEMENT_GUIDE.md)** - Configuration system overview
-- **[PERFORMANCE_MONITORING_GUIDE.md](./PERFORMANCE_MONITORING_GUIDE.md)** - Performance monitoring setup
-- **[OPTIMIZATION_GUIDE.md](./OPTIMIZATION_GUIDE.md)** - Performance optimization techniques
-- **[CONFIGURABLE_MODELS_GUIDE.md](./CONFIGURABLE_MODELS_GUIDE.md)** - Model configuration options
+- **[guides/CONFIGURATION_MANAGEMENT_GUIDE.md](./guides/CONFIGURATION_MANAGEMENT_GUIDE.md)** - Configuration system overview
+- **[guides/PERFORMANCE_MONITORING_GUIDE.md](./guides/PERFORMANCE_MONITORING_GUIDE.md)** - Performance monitoring setup
+- **[guides/OPTIMIZATION_GUIDE.md](./guides/OPTIMIZATION_GUIDE.md)** - Performance optimization techniques
+- **[guides/CONFIGURABLE_MODELS_GUIDE.md](./guides/CONFIGURABLE_MODELS_GUIDE.md)** - Model configuration options
 
 ### **🤖 MCP Server & Agents**
-- **[MCP_IMPLEMENTATION_GUIDE.md](./MCP_IMPLEMENTATION_GUIDE.md)** - MCP server implementation
+- **[guides/MCP_IMPLEMENTATION_GUIDE.md](./guides/MCP_IMPLEMENTATION_GUIDE.md)** - MCP server implementation
 - **[MCP_TOOLS_SUMMARY.md](./MCP_TOOLS_SUMMARY.md)** - Available MCP tools
-- **[MCP_SERVER_OPTIMIZATION_COMPLETE.md](./MCP_SERVER_OPTIMIZATIONS_COMPLETE.md)** - MCP optimization status
-- **[KNOWLEDGE_GRAPH_AGENT_GUIDE.md](./KNOWLEDGE_GRAPH_AGENT_GUIDE.md)** - Knowledge graph agent
-- **[FILE_EXTRACTION_AGENT_GUIDE.md](./FILE_EXTRACTION_AGENT_GUIDE.md)** - File extraction agent
+- **[guides/KNOWLEDGE_GRAPH_AGENT_GUIDE.md](./guides/KNOWLEDGE_GRAPH_AGENT_GUIDE.md)** - Knowledge graph agent
+- **[guides/FILE_EXTRACTION_AGENT_GUIDE.md](./guides/FILE_EXTRACTION_AGENT_GUIDE.md)** - File extraction agent
 
 ### **🌐 Multilingual & Translation**
-- **[TRANSLATION_GUIDE.md](./TRANSLATION_GUIDE.md)** - Translation services
-- **[MULTI_DOMAIN_KNOWLEDGE_GRAPH_GUIDE.md](./MULTI_DOMAIN_KNOWLEDGE_GRAPH_GUIDE.md)** - Multi-domain support
-- **[MULTILINGUAL_KNOWLEDGE_GRAPH_IMPLEMENTATION_PLAN.md](./MULTILINGUAL_KNOWLEDGE_GRAPH_IMPLEMENTATION_PLAN.md)** - Implementation plan
+- **[guides/TRANSLATION_GUIDE.md](./guides/TRANSLATION_GUIDE.md)** - Translation services
+- **[guides/MULTI_DOMAIN_KNOWLEDGE_GRAPH_GUIDE.md](./guides/MULTI_DOMAIN_KNOWLEDGE_GRAPH_GUIDE.md)** - Multi-domain support
 
 ### **🔍 Entity Extraction & Analysis**
-- **[DUPLICATE_DETECTION_GUIDE.md](./DUPLICATE_DETECTION_GUIDE.md)** - Duplicate detection
-- **[ENHANCED_ENTITY_CATEGORIZATION_GUIDE.md](./ENHANCED_ENTITY_CATEGORIZATION_GUIDE.md)** - Entity categorization
-- **[ENTITY_CATEGORIZATION_AND_REPORT_GENERATION_FIXES.md](./ENTITY_CATEGORIZATION_AND_REPORT_GENERATION_FIXES.md)** - Recent fixes
-
-### **📊 Visualization & Reporting**
-- **[ENHANCED_VISUALIZATION_GUIDE.md](./ENHANCED_VISUALIZATION_GUIDE.md)** - Visualization features
-- **[IMPROVED_KNOWLEDGE_GRAPH_GUIDE.md](./IMPROVED_KNOWLEDGE_GRAPH_GUIDE.md)** - Knowledge graph visualization
+- **[guides/DUPLICATE_DETECTION_GUIDE.md](./guides/DUPLICATE_DETECTION_GUIDE.md)** - Duplicate detection
+- **[guides/ENHANCED_ENTITY_CATEGORIZATION_GUIDE.md](./guides/ENHANCED_ENTITY_CATEGORIZATION_GUIDE.md)** - Entity categorization
 
 ### **🎥 Media Processing**
-- **[VIDEO_ANALYSIS_GUIDE.md](./VIDEO_ANALYSIS_GUIDE.md)** - Video processing
-- **[AUDIO_AGENT_MCP_SERVER.md](./AUDIO_AGENT_MCP_SERVER.md)** - Audio processing
-- **[VISION_AGENT_MCP_SERVER.md](./VISION_AGENT_MCP_SERVER.md)** - Vision processing
-- **[TEXT_AGENT_MCP_SERVER.md](./TEXT_AGENT_MCP_SERVER.md)** - Text processing
+- **[guides/VIDEO_ANALYSIS_GUIDE.md](./guides/VIDEO_ANALYSIS_GUIDE.md)** - Video processing
+- **[guides/AUDIO_AGENT_MCP_SERVER.md](./guides/AUDIO_AGENT_MCP_SERVER.md)** - Audio processing
+- **[guides/VISION_AGENT_MCP_SERVER.md](./guides/VISION_AGENT_MCP_SERVER.md)** - Vision processing
+- **[guides/TEXT_AGENT_MCP_SERVER.md](./guides/TEXT_AGENT_MCP_SERVER.md)** - Text processing
 
 ### **🔧 Error Handling & Maintenance**
-- **[ERROR_HANDLING_GUIDE.md](./ERROR_HANDLING_GUIDE.md)** - Error management
-- **[IMPORT_ERROR_RESOLUTION_GUIDE.md](./IMPORT_ERROR_RESOLUTION_GUIDE.md)** - Import error fixes
-- **[FIXES_DOCUMENTATION.md](./FIXES_DOCUMENTATION.md)** - General fixes documentation
+- **[guides/ERROR_HANDLING_GUIDE.md](./guides/ERROR_HANDLING_GUIDE.md)** - Error management
+- **[guides/IMPORT_ERROR_RESOLUTION_GUIDE.md](./guides/IMPORT_ERROR_RESOLUTION_GUIDE.md)** - Import error fixes
+
+### **📊 Batch Analysis & Processing**
+- **[BATCH_ANALYSIS_README.md](./BATCH_ANALYSIS_README.md)** - Batch analysis overview
+- **[BATCH_ANALYSIS_WORKING_GUIDE.md](./BATCH_ANALYSIS_WORKING_GUIDE.md)** - Batch analysis guide
+- **[START_BATCH_ANALYSIS.md](./START_BATCH_ANALYSIS.md)** - Starting batch analysis
+- **[AUTOMATIC_REPORT_SAVING_UPDATE.md](./AUTOMATIC_REPORT_SAVING_UPDATE.md)** - Report saving feature
+
+### **📖 User & Developer Documentation**
+- **[USER_GUIDES.md](./USER_GUIDES.md)** - User documentation
+- **[DEVELOPER_DOCUMENTATION.md](./DEVELOPER_DOCUMENTATION.md)** - Developer documentation
+- **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)** - API documentation
+- **[OLLAMA_CONFIG_QUICK_REFERENCE.md](./OLLAMA_CONFIG_QUICK_REFERENCE.md)** - Ollama quick reference
+
+### **📋 Plans & Implementation**
+- **[plans/](./plans/)** - Implementation plans and strategies
+  - [STRATEGIC_INTELLIGENCE_PLATFORM_IMPLEMENTATION_PLAN.md](./plans/STRATEGIC_INTELLIGENCE_PLATFORM_IMPLEMENTATION_PLAN.md)
+  - [DECISION_SUPPORT_ENHANCEMENT_PLAN.md](./plans/DECISION_SUPPORT_ENHANCEMENT_PLAN.md)
+  - [CONTENT_ANALYSIS_IMPLEMENTATION_PLAN.md](./plans/CONTENT_ANALYSIS_IMPLEMENTATION_PLAN.md)
+  - [MCP_TOOLS_CONSOLIDATION_PLAN.md](./plans/MCP_TOOLS_CONSOLIDATION_PLAN.md)
+  - [intelligence_analysis_queries.md](./plans/intelligence_analysis_queries.md)
+
+### **📋 Checklists & Testing**
+- **[checklists/](./checklists/)** - Checklists and test plans
+  - [PRODUCTION_READINESS_CHECKLIST.md](./checklists/PRODUCTION_READINESS_CHECKLIST.md)
+  - [COMPREHENSIVE_TEST_PLAN.md](./checklists/COMPREHENSIVE_TEST_PLAN.md)
 
 ### **📁 Archive**
-- **[archive/](./archive/)** - Historical documentation and completed status reports
+- **[archive/](./archive/)** - Historical documentation, completed fixes, and outdated reports
 
 ## 📖 **Documentation Standards**
 
 ### **File Naming Conventions**
-- **Guides**: `*_GUIDE.md`
+- **Guides**: `*_GUIDE.md` (stored in `guides/`)
+- **Plans**: `*_PLAN.md` (stored in `plans/`)
+- **Checklists**: `*_CHECKLIST.md` or `*_TEST_PLAN.md` (stored in `checklists/`)
 - **Status Reports**: `*_STATUS.md` or `*_SUMMARY.md`
-- **Implementation Plans**: `*_PLAN.md`
-- **Completion Reports**: `*_COMPLETE.md`
+- **Completion Reports**: `*_COMPLETE.md` (archived)
+- **Fix Reports**: `*_FIX_REPORT.md` (archived)
 
 ### **Content Standards**
 - All files follow markdown formatting
@@ -82,16 +100,19 @@ This directory contains comprehensive documentation for the Sentiment project. A
 
 ### **Maintenance**
 - Update status documents when changes occur
-- Archive completed phase reports
+- Archive completed phase reports and fix reports
 - Keep guides current with implementation
 - Regular review and cleanup
 
 ## 🔄 **Recent Updates**
 
-- **December 2024**: Major documentation cleanup and consolidation
-- **Created**: PROJECT_MASTER_STATUS.md (consolidated status)
-- **Archived**: Redundant phase completion summaries
-- **Organized**: Documentation by category and purpose
+- **December 2024**: Major documentation cleanup and reorganization
+- **Created**: Organized structure with guides/, plans/, checklists/, and archive/ directories
+- **Moved**: All guide files to guides/ directory
+- **Moved**: All plan files to plans/ directory
+- **Moved**: All checklist files to checklists/ directory
+- **Archived**: Completed fix reports and outdated status reports to archive/ directory
+- **Consolidated**: PROJECT_MASTER_STATUS.md (current status)
 
 ## 📞 **Documentation Support**
 

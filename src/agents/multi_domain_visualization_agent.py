@@ -150,7 +150,7 @@ class MultiDomainVisualizationAgent(StrandsBaseAgent):
                 result = {"status": "error", "error": f"Unknown visualization type: {viz_type}"}
             
             return AnalysisResult(
-                request_id=request.request_id,
+                request_id=request.id,
                 data_type=request.data_type,
                 content=request.content,
                 sentiment=SentimentResult(
@@ -172,7 +172,7 @@ class MultiDomainVisualizationAgent(StrandsBaseAgent):
         except Exception as e:
             logger.error(f"Failed to process visualization request: {e}")
             return AnalysisResult(
-                request_id=request.request_id,
+                request_id=request.id,
                 data_type=request.data_type,
                 content=request.content,
                 sentiment=SentimentResult(

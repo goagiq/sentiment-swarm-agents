@@ -971,6 +971,60 @@ class VectorDBManager:
             logger.error(f"Failed to query collection {collection_name}: {e}")
             return []
 
+    async def store_content(
+        self,
+        content: str,
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> str:
+        """Store arbitrary content in the vector database."""
+        try:
+            # Generate unique ID
+            content_id = str(uuid.uuid4())
+            
+            # Prepare metadata
+            if metadata is None:
+                metadata = {}
+            
+            # Add default metadata
+            metadata.update({
+                "content_type": "text",
+                "language": "en",
+                "timestamp": datetime.now().isoformat(),
+                "source": "manual_upload"
+            })
+            
+            # Sanitize metadata
+            sanitized_metadata = self.sanitize_metadata(metadata)
+            
+            # Store in semantic search collection
+            self.semantic_collection.add(
+                documents=[content],
+                metadatas=[sanitized_metadata],
+                ids=[content_id]
+            )
+            
+            # Store in multilingual collection if not English
+            if sanitized_metadata.get("language", "en") != "en":
+                self.multilingual_collection.add(
+                    documents=[content],
+                    metadatas=[sanitized_metadata],
+                    ids=[f"multilingual_{content_id}"]
+                )
+            
+            # Store metadata separately for quick access
+            self.metadata_collection.add(
+                documents=[json.dumps(sanitized_metadata)],
+                metadatas=[sanitized_metadata],
+                ids=[f"meta_{content_id}"]
+            )
+            
+            logger.info(f"Stored content {content_id} in vector database")
+            return content_id
+            
+        except Exception as e:
+            logger.error(f"Failed to store content in vector database: {e}")
+            raise
+
 
 # Global instance
 vector_db = VectorDBManager()

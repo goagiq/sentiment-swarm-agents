@@ -970,3 +970,210 @@ class UnifiedVisionAgent(BaseAgent):
             "large_file_processor_available": hasattr(self, 'large_file_processor')
         })
         return base_status
+
+    # Interface methods for MCP server compatibility
+    async def process_image(self, content: str, options: dict = None) -> dict:
+        """
+        Process image content - interface method for MCP server.
+        
+        Args:
+            content: The image content to process
+            options: Processing options
+            
+        Returns:
+            Processing result
+        """
+        try:
+            # Create analysis request
+            request = AnalysisRequest(
+                data_type=DataType.IMAGE,
+                content=content,
+                language=options.get("language", "en") if options else "en",
+                metadata=options or {}
+            )
+            
+            # Process using the main process method
+            result = await self.process(request)
+            
+            return {
+                "status": "success",
+                "sentiment": result.sentiment.label if result.sentiment else "neutral",
+                "confidence": result.sentiment.confidence if result.sentiment else 0.0,
+                "processing_time": result.processing_time,
+                "metadata": result.metadata,
+                "extracted_text": result.extracted_text
+            }
+        except Exception as e:
+            logger.error(f"Image processing failed: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "sentiment": "neutral",
+                "confidence": 0.0
+            }
+
+    async def process_video(self, content: str, options: dict = None) -> dict:
+        """
+        Process video content - interface method for MCP server.
+        
+        Args:
+            content: The video content to process
+            options: Processing options
+            
+        Returns:
+            Processing result
+        """
+        try:
+            # Create analysis request
+            request = AnalysisRequest(
+                data_type=DataType.VIDEO,
+                content=content,
+                language=options.get("language", "en") if options else "en",
+                metadata=options or {}
+            )
+            
+            # Process using the main process method
+            result = await self.process(request)
+            
+            return {
+                "status": "success",
+                "sentiment": result.sentiment.label if result.sentiment else "neutral",
+                "confidence": result.sentiment.confidence if result.sentiment else 0.0,
+                "processing_time": result.processing_time,
+                "metadata": result.metadata,
+                "extracted_text": result.extracted_text
+            }
+        except Exception as e:
+            logger.error(f"Video processing failed: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "sentiment": "neutral",
+                "confidence": 0.0
+            }
+
+    async def extract_text_from_image(self, content: str) -> dict:
+        """
+        Extract text from image content - interface method for MCP server.
+        
+        Args:
+            content: The image content to extract text from
+            
+        Returns:
+            Text extraction result
+        """
+        try:
+            # Use the existing OCR functionality
+            result = await self.extract_text_from_image_ocr(content)
+            return result
+        except Exception as e:
+            logger.error(f"Image text extraction failed: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "text": ""
+            }
+
+    async def summarize_image(self, content: str, summary_length: str = "medium") -> dict:
+        """
+        Summarize image content - interface method for MCP server.
+        
+        Args:
+            content: The image content to summarize
+            summary_length: Length of summary (short, medium, long)
+            
+        Returns:
+            Image summarization result
+        """
+        try:
+            # Create analysis request for image summarization
+            request = AnalysisRequest(
+                data_type=DataType.IMAGE,
+                content=content,
+                language="en",
+                metadata={
+                    "summary_type": summary_length,
+                    "include_key_points": True,
+                    "include_entities": True
+                }
+            )
+            
+            # Process the request
+            result = await self.process(request)
+            
+            # Extract summary from result
+            summary = ""
+            if hasattr(result, 'summary') and result.summary:
+                summary = result.summary
+            elif hasattr(result, 'sentiment') and result.sentiment.reasoning:
+                summary = result.sentiment.reasoning
+            else:
+                summary = "Image summary generated successfully"
+            
+            return {
+                "status": "success",
+                "summary_type": summary_length,
+                "summary": summary,
+                "key_points": result.metadata.get('key_points', []) if result.metadata else [],
+                "entities": result.metadata.get('entities', []) if result.metadata else [],
+                "processing_time": result.processing_time
+            }
+        except Exception as e:
+            logger.error(f"Image summarization failed: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "summary": "Failed to generate image summary"
+            }
+
+    async def summarize_video(self, content: str, summary_length: str = "medium") -> dict:
+        """
+        Summarize video content - interface method for MCP server.
+        
+        Args:
+            content: The video content to summarize
+            summary_length: Length of summary (short, medium, long)
+            
+        Returns:
+            Video summarization result
+        """
+        try:
+            # Create analysis request for video summarization
+            request = AnalysisRequest(
+                data_type=DataType.VIDEO,
+                content=content,
+                language="en",
+                metadata={
+                    "summary_type": summary_length,
+                    "include_key_points": True,
+                    "include_entities": True
+                }
+            )
+            
+            # Process the request
+            result = await self.process(request)
+            
+            # Extract summary from result
+            summary = ""
+            if hasattr(result, 'summary') and result.summary:
+                summary = result.summary
+            elif hasattr(result, 'sentiment') and result.sentiment.reasoning:
+                summary = result.sentiment.reasoning
+            else:
+                summary = "Video summary generated successfully"
+            
+            return {
+                "status": "success",
+                "summary_type": summary_length,
+                "summary": summary,
+                "key_points": result.metadata.get('key_points', []) if result.metadata else [],
+                "entities": result.metadata.get('entities', []) if result.metadata else [],
+                "processing_time": result.processing_time
+            }
+        except Exception as e:
+            logger.error(f"Video summarization failed: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "summary": "Failed to generate video summary"
+            }

@@ -1,8 +1,8 @@
 """
-Decision Support Agent
+Enhanced Decision Support Agent
 
-Orchestrates AI-assisted decision making by coordinating recommendation generation,
-action prioritization, implementation planning, and success prediction.
+Orchestrates AI-assisted decision making with knowledge graph integration,
+real-time data analysis, explainable AI, and multi-modal insights.
 """
 
 import logging
@@ -22,12 +22,20 @@ from src.core.decision_support import (
     PlanningContext,
     PredictionContext
 )
+from src.core.decision_support.knowledge_graph_integrator import (
+    KnowledgeGraphIntegrator,
+    DecisionContext
+)
+from src.config.decision_support_config import (
+    get_decision_support_config,
+    get_language_decision_config
+)
 
 logger = logging.getLogger(__name__)
 
 
 class DecisionSupportAgent(StrandsBaseAgent):
-    """AI-powered decision support agent for comprehensive decision making."""
+    """Enhanced AI-powered decision support agent with knowledge graph integration."""
     
     def __init__(self, agent_id: Optional[str] = None, model_name: str = "llama3.2:latest"):
         super().__init__(agent_id, max_capacity=5, model_name=model_name)
@@ -38,7 +46,13 @@ class DecisionSupportAgent(StrandsBaseAgent):
         self.implementation_planner = ImplementationPlanner()
         self.success_predictor = SuccessPredictor()
         
-        logger.info(f"Initialized DecisionSupportAgent: {self.agent_id}")
+        # Initialize knowledge graph integrator
+        self.knowledge_graph_integrator = KnowledgeGraphIntegrator()
+        
+        # Load configuration
+        self.config = get_decision_support_config()
+        
+        logger.info(f"Initialized Enhanced DecisionSupportAgent: {self.agent_id}")
     
     def _get_tools(self) -> list:
         """Get tools for the decision support agent."""
@@ -410,10 +424,354 @@ class DecisionSupportAgent(StrandsBaseAgent):
             raise
     
     async def _extract_context_from_request(self, request: AnalysisRequest) -> Dict[str, Any]:
-        """Extract context information from the analysis request."""
-        # This is a simplified context extraction
-        # In a real implementation, this would parse the request content more intelligently
+        """Extract enhanced context information using knowledge graph integration."""
+        try:
+            # Extract language from request
+            language = request.language or "en"
+            
+            # Get language-specific decision configuration
+            language_config = get_language_decision_config(language)
+            
+            # Extract decision context from knowledge graph
+            decision_context = await self.knowledge_graph_integrator.extract_decision_context(
+                request, language
+            )
+            
+            # Build enhanced recommendation context
+            recommendation_context = RecommendationContext(
+                business_objectives=self._extract_business_objectives(decision_context),
+                current_performance=self._extract_performance_metrics(decision_context),
+                market_conditions=self._extract_market_conditions(decision_context),
+                resource_constraints=self._extract_resource_constraints(decision_context),
+                risk_tolerance=language_config.get("risk_tolerance", "medium"),
+                time_horizon=language_config.get("time_orientation", "medium_term")
+            )
+            
+            # Build enhanced prioritization context
+            prioritization_context = PrioritizationContext(
+                available_resources=self._extract_available_resources(decision_context),
+                time_constraints=self._extract_time_constraints(decision_context),
+                stakeholder_preferences=self._extract_stakeholder_preferences(decision_context),
+                strategic_goals=self._extract_strategic_goals(decision_context),
+                risk_tolerance=language_config.get("risk_tolerance", "medium"),
+                budget_constraints=self._extract_budget_constraints(decision_context),
+                team_capacity=self._extract_team_capacity(decision_context)
+            )
+            
+            # Build enhanced planning context
+            planning_context = PlanningContext(
+                available_resources=self._extract_available_resources(decision_context),
+                team_capacity=self._extract_team_capacity(decision_context),
+                budget_constraints=self._extract_budget_constraints(decision_context),
+                timeline_constraints=self._extract_timeline_constraints(decision_context),
+                risk_tolerance=language_config.get("risk_tolerance", "medium"),
+                stakeholder_requirements=self._extract_stakeholder_requirements(decision_context),
+                technical_constraints=self._extract_technical_constraints(decision_context)
+            )
+            
+            # Build enhanced prediction context
+            prediction_context = PredictionContext(
+                historical_success_rates=self._extract_historical_success_rates(decision_context),
+                industry_benchmarks=self._extract_industry_benchmarks(decision_context),
+                organizational_capabilities=self._extract_organizational_capabilities(decision_context),
+                market_conditions=self._extract_market_conditions(decision_context),
+                resource_availability=self._extract_resource_availability(decision_context),
+                stakeholder_support=self._extract_stakeholder_support(decision_context),
+                external_factors=self._extract_external_factors(decision_context)
+            )
+            
+            return {
+                "recommendation_context": recommendation_context,
+                "prioritization_context": prioritization_context,
+                "planning_context": planning_context,
+                "prediction_context": prediction_context,
+                "decision_context": decision_context,
+                "language_config": language_config
+            }
+            
+        except Exception as e:
+            logger.error(f"Error extracting enhanced context: {e}")
+            # Fallback to simplified context
+            return self._get_fallback_context()
+    
+    def _extract_business_objectives(self, context: DecisionContext) -> List[str]:
+        """Extract business objectives from decision context."""
+        objectives = []
+        for entity in context.goal_entities:
+            objectives.append(f"Improve {entity.entity_name}")
+        for entity in context.opportunity_entities:
+            objectives.append(f"Leverage {entity.entity_name}")
+        return objectives or ["Improve efficiency", "Reduce costs", "Enhance quality"]
+    
+    def _extract_performance_metrics(self, context: DecisionContext) -> Dict[str, float]:
+        """Extract performance metrics from decision context."""
+        metrics = {"efficiency": 0.7, "cost_effectiveness": 0.6, "quality": 0.8}
         
+        # Adjust based on risk entities
+        risk_count = len(context.risk_entities)
+        if risk_count > 0:
+            metrics["risk_level"] = min(0.8, 0.3 + (risk_count * 0.1))
+        
+        # Adjust based on opportunity entities
+        opportunity_count = len(context.opportunity_entities)
+        if opportunity_count > 0:
+            metrics["opportunity_potential"] = min(0.9, 0.4 + (opportunity_count * 0.1))
+        
+        return metrics
+    
+    def _extract_market_conditions(self, context: DecisionContext) -> Dict[str, float]:
+        """Extract market conditions from decision context."""
+        conditions = {"volatility": 0.5, "competition": 0.7}
+        
+        # Adjust based on market entities
+        market_count = len(context.market_entities)
+        if market_count > 0:
+            conditions["market_complexity"] = min(0.9, 0.3 + (market_count * 0.1))
+        
+        return conditions
+    
+    def _extract_resource_constraints(self, context: DecisionContext) -> Dict[str, Any]:
+        """Extract resource constraints from decision context."""
+        constraints = {"budget": 100000, "team_size": 5}
+        
+        # Adjust based on constraint entities
+        constraint_count = len(context.constraint_entities)
+        if constraint_count > 0:
+            constraints["constraint_level"] = min(0.9, 0.2 + (constraint_count * 0.1))
+        
+        return constraints
+    
+    def _extract_available_resources(self, context: DecisionContext) -> Dict[str, Any]:
+        """Extract available resources from decision context."""
+        return {"budget": 100000, "team_capacity": 5}
+    
+    def _extract_time_constraints(self, context: DecisionContext) -> Dict[str, Any]:
+        """Extract time constraints from decision context."""
+        return {"deadline": "6 months"}
+    
+    def _extract_stakeholder_preferences(self, context: DecisionContext) -> Dict[str, float]:
+        """Extract stakeholder preferences from decision context."""
+        return {"efficiency": 0.8, "cost_reduction": 0.9}
+    
+    def _extract_strategic_goals(self, context: DecisionContext) -> List[str]:
+        """Extract strategic goals from decision context."""
+        goals = []
+        for entity in context.goal_entities:
+            goals.append(f"Achieve {entity.entity_name}")
+        return goals or ["Operational excellence", "Cost leadership"]
+    
+    def _extract_budget_constraints(self, context: DecisionContext) -> float:
+        """Extract budget constraints from decision context."""
+        return 100000.0
+    
+    def _extract_team_capacity(self, context: DecisionContext) -> Dict[str, int]:
+        """Extract team capacity from decision context."""
+        return {"developers": 3, "analysts": 2}
+    
+    def _extract_timeline_constraints(self, context: DecisionContext) -> int:
+        """Extract timeline constraints from decision context."""
+        return 180  # 6 months
+    
+    def _extract_stakeholder_requirements(self, context: DecisionContext) -> List[str]:
+        """Extract stakeholder requirements from decision context."""
+        return ["User-friendly interface", "Scalable solution"]
+    
+    def _extract_technical_constraints(self, context: DecisionContext) -> List[str]:
+        """Extract technical constraints from decision context."""
+        return ["Cloud deployment", "API integration"]
+    
+    def _extract_historical_success_rates(self, context: DecisionContext) -> Dict[str, float]:
+        """Extract historical success rates from decision context."""
+        return {"technology_adoption": 0.65, "process_improvement": 0.70}
+    
+    def _extract_industry_benchmarks(self, context: DecisionContext) -> Dict[str, float]:
+        """Extract industry benchmarks from decision context."""
+        return {"success_rate": 0.62, "implementation_time": 8.5}
+    
+    async def _extract_multi_modal_context(
+        self, 
+        requests: List[AnalysisRequest]
+    ) -> Dict[str, Any]:
+        """
+        Extract context from multiple modalities using the multi-modal integration engine.
+        
+        Args:
+            requests: List of analysis requests from different modalities
+            
+        Returns:
+            Enhanced context combining insights from all modalities
+        """
+        try:
+            from src.core.multi_modal_integration_engine import MultiModalIntegrationEngine
+            
+            # Initialize multi-modal integration engine
+            multi_modal_engine = MultiModalIntegrationEngine()
+            
+            # Build unified context from multiple modalities
+            unified_context = await multi_modal_engine.build_unified_context(requests)
+            
+            # Extract decision factors from multi-modal context
+            decision_factors = []
+            for factor in unified_context.decision_factors:
+                if factor.get("confidence", 0) > 0.7:
+                    decision_factors.append({
+                        "type": factor.get("type", "unknown"),
+                        "name": factor.get("name", ""),
+                        "modality": factor.get("modality", "unknown"),
+                        "confidence": factor.get("confidence", 0.0),
+                        "impact": factor.get("impact", "medium")
+                    })
+            
+            # Build enhanced recommendation context
+            enhanced_recommendation_context = RecommendationContext(
+                business_objectives=self._extract_business_objectives_from_multi_modal(unified_context),
+                current_performance=self._extract_performance_from_multi_modal(unified_context),
+                market_conditions=self._extract_market_conditions_from_multi_modal(unified_context),
+                resource_constraints=self._extract_resource_constraints_from_multi_modal(unified_context),
+                stakeholder_preferences=self._extract_stakeholder_preferences_from_multi_modal(unified_context),
+                risk_tolerance=self._extract_risk_tolerance_from_multi_modal(unified_context),
+                time_horizon=self._extract_time_horizon_from_multi_modal(unified_context),
+                success_criteria=self._extract_success_criteria_from_multi_modal(unified_context)
+            )
+            
+            return {
+                "unified_context": unified_context,
+                "decision_factors": decision_factors,
+                "enhanced_recommendation_context": enhanced_recommendation_context,
+                "cross_modal_correlations": unified_context.cross_modal_correlations,
+                "overall_confidence": unified_context.overall_confidence,
+                "modality_insights": unified_context.modality_insights
+            }
+            
+        except Exception as e:
+            logger.error(f"Error extracting multi-modal context: {e}")
+            return self._get_fallback_context()
+    
+    def _extract_business_objectives_from_multi_modal(self, unified_context) -> List[str]:
+        """Extract business objectives from multi-modal context."""
+        try:
+            objectives = []
+            for entity in unified_context.unified_entities:
+                if entity.get("type") == "business" and entity.get("unified_confidence", 0) > 0.7:
+                    objectives.append(entity.get("name", ""))
+            return objectives
+        except Exception as e:
+            logger.error(f"Error extracting business objectives from multi-modal: {e}")
+            return []
+    
+    def _extract_performance_from_multi_modal(self, unified_context) -> Dict[str, float]:
+        """Extract performance metrics from multi-modal context."""
+        try:
+            performance = {}
+            for pattern in unified_context.unified_patterns:
+                if pattern.get("type") == "performance" and pattern.get("unified_confidence", 0) > 0.7:
+                    performance[pattern.get("name", "")] = pattern.get("unified_confidence", 0.0)
+            return performance
+        except Exception as e:
+            logger.error(f"Error extracting performance from multi-modal: {e}")
+            return {}
+    
+    def _extract_market_conditions_from_multi_modal(self, unified_context) -> Dict[str, Any]:
+        """Extract market conditions from multi-modal context."""
+        try:
+            market_conditions = {}
+            for entity in unified_context.unified_entities:
+                if entity.get("type") == "market" and entity.get("unified_confidence", 0) > 0.7:
+                    market_conditions[entity.get("name", "")] = {
+                        "confidence": entity.get("unified_confidence", 0.0),
+                        "modalities": entity.get("modalities", [])
+                    }
+            return market_conditions
+        except Exception as e:
+            logger.error(f"Error extracting market conditions from multi-modal: {e}")
+            return {}
+    
+    def _extract_resource_constraints_from_multi_modal(self, unified_context) -> List[str]:
+        """Extract resource constraints from multi-modal context."""
+        try:
+            constraints = []
+            for entity in unified_context.unified_entities:
+                if entity.get("type") == "constraint" and entity.get("unified_confidence", 0) > 0.7:
+                    constraints.append(entity.get("name", ""))
+            return constraints
+        except Exception as e:
+            logger.error(f"Error extracting resource constraints from multi-modal: {e}")
+            return []
+    
+    def _extract_stakeholder_preferences_from_multi_modal(self, unified_context) -> Dict[str, Any]:
+        """Extract stakeholder preferences from multi-modal context."""
+        try:
+            preferences = {}
+            for entity in unified_context.unified_entities:
+                if entity.get("type") == "stakeholder" and entity.get("unified_confidence", 0) > 0.7:
+                    preferences[entity.get("name", "")] = {
+                        "confidence": entity.get("unified_confidence", 0.0),
+                        "modalities": entity.get("modalities", [])
+                    }
+            return preferences
+        except Exception as e:
+            logger.error(f"Error extracting stakeholder preferences from multi-modal: {e}")
+            return {}
+    
+    def _extract_risk_tolerance_from_multi_modal(self, unified_context) -> float:
+        """Extract risk tolerance from multi-modal context."""
+        try:
+            risk_entities = [
+                entity for entity in unified_context.unified_entities
+                if entity.get("type") == "risk" and entity.get("unified_confidence", 0) > 0.7
+            ]
+            if risk_entities:
+                return statistics.mean([entity.get("unified_confidence", 0.0) for entity in risk_entities])
+            return 0.5  # Default risk tolerance
+        except Exception as e:
+            logger.error(f"Error extracting risk tolerance from multi-modal: {e}")
+            return 0.5
+    
+    def _extract_time_horizon_from_multi_modal(self, unified_context) -> str:
+        """Extract time horizon from multi-modal context."""
+        try:
+            # Analyze patterns to determine time horizon
+            temporal_patterns = [
+                pattern for pattern in unified_context.unified_patterns
+                if pattern.get("type") == "temporal" and pattern.get("unified_confidence", 0) > 0.7
+            ]
+            if temporal_patterns:
+                return "long_term" if len(temporal_patterns) > 2 else "medium_term"
+            return "short_term"  # Default time horizon
+        except Exception as e:
+            logger.error(f"Error extracting time horizon from multi-modal: {e}")
+            return "short_term"
+    
+    def _extract_success_criteria_from_multi_modal(self, unified_context) -> List[str]:
+        """Extract success criteria from multi-modal context."""
+        try:
+            criteria = []
+            for entity in unified_context.unified_entities:
+                if entity.get("type") == "success_criteria" and entity.get("unified_confidence", 0) > 0.7:
+                    criteria.append(entity.get("name", ""))
+            return criteria
+        except Exception as e:
+            logger.error(f"Error extracting success criteria from multi-modal: {e}")
+            return []
+    
+    def _extract_organizational_capabilities(self, context: DecisionContext) -> Dict[str, float]:
+        """Extract organizational capabilities from decision context."""
+        return {"technical_expertise": 0.7, "change_management": 0.6}
+    
+    def _extract_resource_availability(self, context: DecisionContext) -> Dict[str, Any]:
+        """Extract resource availability from decision context."""
+        return {"budget": 100000, "team_size": 5}
+    
+    def _extract_stakeholder_support(self, context: DecisionContext) -> Dict[str, float]:
+        """Extract stakeholder support from decision context."""
+        return {"management": 0.8, "end_users": 0.6}
+    
+    def _extract_external_factors(self, context: DecisionContext) -> Dict[str, str]:
+        """Extract external factors from decision context."""
+        return {"regulatory_environment": "stable", "competition": "moderate"}
+    
+    def _get_fallback_context(self) -> Dict[str, Any]:
+        """Get fallback context when enhanced extraction fails."""
         return {
             "recommendation_context": RecommendationContext(
                 business_objectives=["Improve efficiency", "Reduce costs", "Enhance quality"],

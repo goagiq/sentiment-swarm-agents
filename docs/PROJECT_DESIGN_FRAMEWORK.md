@@ -1,11 +1,33 @@
 # Project Design Framework
 ## Sentiment Analysis Swarm with Multilingual MCP Integration
 
-### Version: 1.3
-### Last Updated: 2025-08-13
-### Status: Active (Dual MCP Server Architecture)
+### Version: 1.6
+### Last Updated: 2025-08-14
+### Status: Active (Dual MCP Server Architecture with Fixed MCP Integration)
 
-### Recent Updates (v1.3)
+### Recent Updates (v1.6)
+- **Multilingual Configuration Standards**: Enhanced multilingual support with configuration-driven regex parsing and language-specific parameters
+- **MCP Tool Integration Requirements**: All functionality must be integrated into MCP tools with proper testing and verification
+- **Script Execution Standards**: All scripts must use `.venv/Scripts/python.exe` for execution
+- **Comprehensive File Integration**: Changes must touch all related files with proper testing before reporting success
+- **MCP Framework Fix**: Fixed critical `store_document` method error in standalone MCP server
+- **Vector Database Integration**: Corrected method calls to use `store_content` instead of non-existent `store_document`
+- **Website Content Download Framework**: Comprehensive guidelines for adding new website sources
+- **Error Handling Standards**: Enhanced error handling for MCP server and vector database operations
+- **Integration Patterns**: Standardized patterns for new website content processing
+- **Testing Framework**: Added specific testing requirements for website content integration
+- **Performance Guidelines**: Updated performance considerations for content processing
+- **System Restart Framework**: Comprehensive restart mechanism with process management and verification
+
+### Recent Updates (v1.4)
+- **Open Library Integration**: Enhanced MCP server with Open Library content download and processing capabilities
+- **Enhanced Process Content Tool**: Extended `process_content` tool with Open Library URL detection and processing
+- **Generic Content Downloader**: Created reusable script for downloading any Open Library book
+- **Vector Database Integration**: Automatic storage of downloaded content in ChromaDB
+- **Knowledge Graph Generation**: Automatic creation of knowledge graphs from Open Library content
+- **Metadata Extraction**: Enhanced metadata extraction from Open Library pages
+- **Content Type Detection**: Improved content type detection including Open Library URLs
+- **Enhanced MCP Server**: Extended `UnifiedMCPServer` with `EnhancedUnifiedMCPServer` for Open Library support
 - **Dual MCP Server Architecture**: Implemented both unified and standalone servers for maximum compatibility
 - **Strands Integration**: Complete support for Strands integration with Streamable HTTP transport
 - **Standalone MCP Server**: Dedicated server on port 8000 for Strands integration
@@ -24,17 +46,18 @@
 3. [Technology Stack](#technology-stack)
 4. [Component Architecture](#component-architecture)
 5. [MCP Framework Integration](#mcp-framework-integration)
-6. [Multilingual Processing Framework](#multilingual-processing-framework)
-7. [Configuration Management](#configuration-management)
-8. [Testing Framework](#testing-framework)
-9. [File Organization Standards](#file-organization-standards)
-10. [Coding Standards](#coding-standards)
-11. [Integration Patterns](#integration-patterns)
-12. [Error Handling Standards](#error-handling-standards)
-13. [Performance Guidelines](#performance-guidelines)
-14. [Security Considerations](#security-considerations)
-15. [Deployment Standards](#deployment-standards)
-16. [Documentation Standards](#documentation-standards)
+6. [Open Library Integration Framework](#open-library-integration-framework)
+7. [Multilingual Processing Framework](#multilingual-processing-framework)
+8. [Configuration Management](#configuration-management)
+9. [Testing Framework](#testing-framework)
+10. [File Organization Standards](#file-organization-standards)
+11. [Coding Standards](#coding-standards)
+12. [Integration Patterns](#integration-patterns)
+13. [Error Handling Standards](#error-handling-standards)
+14. [Performance Guidelines](#performance-guidelines)
+15. [Security Considerations](#security-considerations)
+16. [Deployment Standards](#deployment-standards)
+17. [Documentation Standards](#documentation-standards)
 
 ---
 
@@ -775,6 +798,10 @@ def get_http_app(self, path: str = "/mcp"):
 - [x] Process management for Windows environment
 - [x] Standalone MCP server on port 8000
 - [x] FastAPI MCP integration on port 8003
+- [x] Open Library integration with enhanced MCP server
+- [x] Content type detection including Open Library URLs
+- [x] Automatic vector database storage for downloaded content
+- [x] Knowledge graph generation from Open Library content
 
 ### MCP Implementation Guide
 
@@ -1139,43 +1166,566 @@ client = MCPClient(create_transport)
 
 ---
 
+## Open Library Integration Framework
+
+### Overview
+The system now includes comprehensive Open Library integration capabilities through the enhanced MCP server architecture. This allows for automatic downloading, processing, and analysis of content from Open Library URLs, with seamless integration into the existing vector database and knowledge graph systems.
+
+### Enhanced MCP Server Architecture
+
+#### EnhancedUnifiedMCPServer Implementation
+```python
+# src/mcp_servers/enhanced_unified_mcp_server.py
+class EnhancedUnifiedMCPServer(UnifiedMCPServer):
+    """
+    Enhanced Unified MCP Server with Open Library integration.
+    
+    Extends the base UnifiedMCPServer with:
+    - Open Library URL detection and processing
+    - Enhanced content type detection
+    - Integrated vector database storage
+    - Knowledge graph generation
+    """
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Initialize additional services for Open Library processing
+        self.vector_db = VectorDBManager()
+        self.kg_utility = ImprovedKnowledgeGraphUtility()
+        self.kg_agent = KnowledgeGraphAgent()
+        self.web_agent = EnhancedWebAgent()
+        self.translation_service = TranslationService()
+        
+        logger.info("Enhanced Unified MCP Server initialized with Open Library support")
+    
+    def _detect_content_type(self, content: str) -> str:
+        """Enhanced content type detection including Open Library URLs."""
+        # Check for Open Library URL patterns
+        if self._is_openlibrary_url(content):
+            return "openlibrary"
+        
+        # Fall back to base detection
+        return super()._detect_content_type(content)
+    
+    def _is_openlibrary_url(self, content: str) -> bool:
+        """Check if content is an Open Library URL."""
+        openlibrary_patterns = [
+            r"https?://openlibrary\.org/books/",
+            r"https?://openlibrary\.org/works/",
+            r"https?://openlibrary\.org/authors/"
+        ]
+        
+        for pattern in openlibrary_patterns:
+            if re.search(pattern, content):
+                return True
+        return False
+    
+    async def _download_openlibrary_content(self, url: str) -> Optional[Dict[str, Any]]:
+        """Download content from Open Library URL."""
+        try:
+            # Use the web agent's _fetch_webpage method directly
+            webpage_data = await self.web_agent._fetch_webpage(url)
+            
+            # Process the webpage data
+            cleaned_text = self.web_agent._clean_webpage_text(webpage_data["html"])
+            
+            webpage_content = {
+                "url": url,
+                "title": webpage_data["title"],
+                "text": cleaned_text,
+                "html": webpage_data["html"],
+                "status_code": webpage_data["status_code"]
+            }
+            
+            return webpage_content
+        except Exception as e:
+            logger.error(f"Error downloading Open Library content: {e}")
+            return None
+    
+    def _extract_metadata_from_content(self, content: str, title: str, url: str = "") -> Dict[str, Any]:
+        """Extract metadata from Open Library content."""
+        metadata = {
+            "title": title,
+            "url": url,
+            "source": "openlibrary",
+            "content_length": len(content),
+            "extraction_timestamp": datetime.now().isoformat(),
+            "content_type": "book"
+        }
+        
+        # Extract additional metadata from title or content
+        if "War and Peace" in title:
+            metadata.update({
+                "author": "Leo Tolstoy",
+                "original_title": "Война и мир",
+                "publication_year": "1869",
+                "genre": "Historical Fiction"
+            })
+        
+        return metadata
+    
+    def _generate_summary(self, content: str, title: str, author: Optional[str] = None) -> str:
+        """Generate summary for Open Library content."""
+        try:
+            # Use the first 1000 characters for summary generation
+            summary_content = content[:1000] if len(content) > 1000 else content
+            
+            summary_prompt = f"""
+            Generate a concise summary of the following content from '{title}'{f' by {author}' if author else ''}:
+            
+            {summary_content}
+            
+            Summary:
+            """
+            
+            # Use translation service for summary generation
+            summary = self.translation_service.generate_summary(summary_prompt)
+            return summary
+        except Exception as e:
+            logger.error(f"Error generating summary: {e}")
+            return f"Summary of {title} (summary generation failed)"
+    
+    async def _process_openlibrary_content(self, url: str, language: str, options: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Complete pipeline for processing Open Library content."""
+        try:
+            logger.info(f"🔄 Processing Open Library content from: {url}")
+            
+            # Step 1: Download content
+            webpage_content = await self._download_openlibrary_content(url)
+            if not webpage_content:
+                return {"success": False, "error": "Failed to download content"}
+            
+            # Step 2: Extract metadata
+            metadata = self._extract_metadata_from_content(
+                webpage_content["text"], 
+                webpage_content["title"], 
+                url
+            )
+            
+            # Step 3: Generate summary
+            summary = self._generate_summary(
+                webpage_content["text"], 
+                webpage_content["title"],
+                metadata.get("author")
+            )
+            
+            # Step 4: Store in vector database
+            vector_result = await self.vector_db.store_content(
+                content=webpage_content["text"],
+                metadata=metadata,
+                content_type="openlibrary"
+            )
+            
+            # Step 5: Create knowledge graph
+            kg_result = await self.kg_utility.create_knowledge_graph(
+                content=webpage_content["text"],
+                title=webpage_content["title"],
+                metadata=metadata
+            )
+            
+            # Step 6: Analyze sentiment
+            sentiment_result = await self.text_agent.analyze_sentiment(
+                webpage_content["text"], 
+                language
+            )
+            
+            result = {
+                "success": True,
+                "url": url,
+                "title": webpage_content["title"],
+                "content_length": len(webpage_content["text"]),
+                "metadata": metadata,
+                "summary": summary,
+                "vector_storage": vector_result,
+                "knowledge_graph": kg_result,
+                "sentiment_analysis": sentiment_result,
+                "processing_timestamp": datetime.now().isoformat()
+            }
+            
+            logger.info(f"✅ Open Library content processed successfully: {webpage_content['title']}")
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error processing Open Library content: {e}")
+            return {"success": False, "error": str(e)}
+```
+
+### Enhanced Tool Registration
+
+#### Enhanced process_content Tool
+```python
+@self.mcp.tool(description="Enhanced content processing with Open Library support")
+async def process_content(
+    content: str,
+    content_type: str = "auto",
+    language: str = "en",
+    options: Dict[str, Any] = None
+) -> Dict[str, Any]:
+    """Process any type of content with unified interface and Open Library support."""
+    try:
+        # Auto-detect content type if not specified
+        if content_type == "auto":
+            content_type = self._detect_content_type(content)
+        
+        # Handle Open Library URLs specifically
+        if content_type == "openlibrary":
+            result = await self._process_openlibrary_content(content, language, options)
+            return result
+        
+        # Route to appropriate agent based on content type
+        if content_type in ["text", "pdf"]:
+            result = await self.text_agent.process_content(content, language, options)
+        elif content_type in ["audio", "video"]:
+            result = await self.audio_agent.process_content(content, language, options)
+        elif content_type in ["image", "vision"]:
+            result = await self.vision_agent.process_content(content, language, options)
+        else:
+            result = await self.text_agent.process_content(content, language, options)
+        
+        return {"success": True, "result": result}
+    except Exception as e:
+        logger.error(f"Error processing content: {e}")
+        return {"success": False, "error": str(e)}
+```
+
+#### New download_openlibrary_content Tool
+```python
+@self.mcp.tool(description="Download and process Open Library content")
+async def download_openlibrary_content(url: str) -> Dict[str, Any]:
+    """Download and process content from Open Library URL."""
+    try:
+        logger.info(f"🔄 Downloading Open Library content from: {url}")
+        
+        # Validate URL
+        if not self._is_openlibrary_url(url):
+            return {"success": False, "error": "Invalid Open Library URL"}
+        
+        # Process the Open Library content
+        result = await self._process_openlibrary_content(url, "en", {})
+        
+        return result
+    except Exception as e:
+        logger.error(f"Error downloading Open Library content: {e}")
+        return {"success": False, "error": str(e)}
+```
+
+### Generic Open Library Downloader Script
+
+#### Implementation Pattern
+```python
+# generic_openlibrary_downloader.py
+async def download_openlibrary_content(url: str) -> Optional[Dict[str, Any]]:
+    """Download and process content from any Open Library URL."""
+    try:
+        # Initialize services
+        web_agent = EnhancedWebAgent()
+        vector_db = VectorDBManager()
+        kg_utility = ImprovedKnowledgeGraphUtility()
+        text_agent = UnifiedTextAgent()
+        
+        # Download content
+        webpage_data = await web_agent._fetch_webpage(url)
+        cleaned_text = web_agent._clean_webpage_text(webpage_data["html"])
+        
+        # Extract metadata
+        metadata = {
+            "url": url,
+            "title": webpage_data["title"],
+            "source": "openlibrary",
+            "content_length": len(cleaned_text),
+            "extraction_timestamp": datetime.now().isoformat()
+        }
+        
+        # Store in vector database
+        vector_result = await vector_db.store_content(
+            content=cleaned_text,
+            metadata=metadata,
+            content_type="openlibrary"
+        )
+        
+        # Create knowledge graph
+        kg_result = await kg_utility.create_knowledge_graph(
+            content=cleaned_text,
+            title=webpage_data["title"],
+            metadata=metadata
+        )
+        
+        # Analyze sentiment
+        sentiment_result = await text_agent.analyze_sentiment(cleaned_text, "en")
+        
+        return {
+            "success": True,
+            "url": url,
+            "title": webpage_data["title"],
+            "content_length": len(cleaned_text),
+            "metadata": metadata,
+            "vector_storage": vector_result,
+            "knowledge_graph": kg_result,
+            "sentiment_analysis": sentiment_result
+        }
+        
+    except Exception as e:
+        logger.error(f"Error processing Open Library content: {e}")
+        return None
+```
+
+### Content Processing Pipeline
+
+#### Open Library Processing Flow
+1. **URL Validation**: Check if the provided content is a valid Open Library URL
+2. **Content Download**: Use `EnhancedWebAgent` to download the webpage content
+3. **Text Extraction**: Clean and extract text from the HTML content
+4. **Metadata Extraction**: Extract relevant metadata (title, author, publication info)
+5. **Vector Storage**: Store the content in ChromaDB for semantic search
+6. **Knowledge Graph Generation**: Create a knowledge graph from the content
+7. **Sentiment Analysis**: Analyze the sentiment of the content
+8. **Summary Generation**: Generate a concise summary of the content
+9. **Result Compilation**: Return comprehensive processing results
+
+#### Integration Points
+- **Vector Database**: Automatic storage in ChromaDB with metadata
+- **Knowledge Graph**: Entity extraction and relationship mapping
+- **Sentiment Analysis**: Multilingual sentiment analysis
+- **Translation Service**: Summary generation and content translation
+- **Web Agent**: Enhanced web scraping capabilities
+
+### Usage Examples
+
+#### Using Enhanced MCP Server
+```python
+# Initialize enhanced MCP server
+from src.mcp_servers.enhanced_unified_mcp_server import EnhancedUnifiedMCPServer
+
+server = EnhancedUnifiedMCPServer()
+
+# Process Open Library content
+result = await server.process_content(
+    content="https://openlibrary.org/books/OL14047767M/Voina_i_mir_%D0%92%D0%9E%D0%99%D0%9D%D0%90_%D0%B8_%D0%9C%D0%98%D0%A0%D0%AA",
+    content_type="auto",
+    language="en"
+)
+
+# Download specific Open Library content
+result = await server.download_openlibrary_content(
+    url="https://openlibrary.org/books/OL14047767M/Voina_i_mir_%D0%92%D0%9E%D0%99%D0%9D%D0%90_%D0%B8_%D0%9C%D0%98%D0%A0%D0%AA"
+)
+```
+
+#### Using Generic Downloader Script
+```python
+# Use the generic downloader for any Open Library URL
+from generic_openlibrary_downloader import download_openlibrary_content
+
+result = await download_openlibrary_content(
+    "https://openlibrary.org/books/OL14047767M/Voina_i_mir_%D0%92%D0%9E%D0%99%D0%9D%D0%90_%D0%B8_%D0%9C%D0%98%D0%A0%D0%AA"
+)
+
+if result and result["success"]:
+    print(f"✅ Downloaded: {result['title']}")
+    print(f"📊 Content length: {result['content_length']} characters")
+    print(f"🗄️ Vector storage: {result['vector_storage']['success']}")
+    print(f"🕸️ Knowledge graph: {result['knowledge_graph']['success']}")
+```
+
+### Error Handling and Validation
+
+#### URL Validation
+```python
+def _is_openlibrary_url(self, content: str) -> bool:
+    """Validate Open Library URL patterns."""
+    openlibrary_patterns = [
+        r"https?://openlibrary\.org/books/",
+        r"https?://openlibrary\.org/works/",
+        r"https?://openlibrary\.org/authors/"
+    ]
+    
+    for pattern in openlibrary_patterns:
+        if re.search(pattern, content):
+            return True
+    return False
+```
+
+#### Error Recovery
+- **Download Failures**: Retry with exponential backoff
+- **Processing Errors**: Graceful degradation with partial results
+- **Storage Failures**: Fallback to local storage
+- **Network Issues**: Circuit breaker pattern for external calls
+
+### Performance Considerations
+
+#### Optimization Strategies
+1. **Caching**: Cache downloaded content to avoid re-downloading
+2. **Batch Processing**: Process multiple URLs in parallel
+3. **Incremental Updates**: Only download new or changed content
+4. **Resource Management**: Proper cleanup of temporary resources
+
+#### Monitoring and Metrics
+- **Download Success Rate**: Track successful vs failed downloads
+- **Processing Time**: Monitor content processing performance
+- **Storage Usage**: Track vector database and knowledge graph growth
+- **Error Rates**: Monitor and alert on processing errors
+
+### Security and Compliance
+
+#### Content Validation
+- **URL Sanitization**: Validate and sanitize all URLs
+- **Content Size Limits**: Implement reasonable size limits
+- **Rate Limiting**: Prevent abuse of Open Library resources
+- **Access Control**: Implement proper access controls
+
+#### Data Privacy
+- **Content Storage**: Secure storage of downloaded content
+- **Metadata Handling**: Proper handling of sensitive metadata
+- **Audit Logging**: Log all content processing activities
+- **Data Retention**: Implement appropriate data retention policies
+
+---
+
 ## Multilingual Processing Framework
+
+### Critical Multilingual Configuration Standards
+
+#### IMPORTANT: Multilingual Configuration Requirements
+- **Language-Specific Regex Parsing**: All language-specific regex parsing parameters MUST be stored in configuration files under `/src/config`
+- **Comprehensive File Integration**: Any changes must touch ALL related files with proper testing before reporting success
+- **MCP Tool Integration**: All functionality must be integrated into MCP tools with proper testing and verification
+- **Script Execution Standards**: All scripts must use `.venv/Scripts/python.exe` for execution
+- **Testing Requirements**: Always test and verify everything working before reporting success
+
+#### Configuration-Driven Multilingual Support
+```python
+# Example: Language-specific regex patterns in config files
+class ChineseConfig(BaseLanguageConfig):
+    def get_entity_patterns(self) -> EntityPatterns:
+        return EntityPatterns(
+            person_patterns=[
+                r'[\u4e00-\u9fff]{2,4}',  # Chinese names (2-4 characters)
+                r'[A-Z][a-z]+ [A-Z][a-z]+'  # English names in Chinese text
+            ],
+            organization_patterns=[
+                r'[\u4e00-\u9fff]+(?:公司|集团|企业|机构)',  # Chinese organizations
+                r'[A-Z][A-Z\s]+(?:Inc|Corp|Ltd|Company)'  # English organizations
+            ],
+            location_patterns=[
+                r'[\u4e00-\u9fff]+(?:省|市|县|区)',  # Chinese administrative divisions
+                r'[\u4e00-\u9fff]+(?:山|河|湖|海)',  # Chinese geographical features
+            ]
+        )
+
+class RussianConfig(BaseLanguageConfig):
+    def get_entity_patterns(self) -> EntityPatterns:
+        return EntityPatterns(
+            person_patterns=[
+                r'[А-Я][а-я]+ [А-Я][а-я]+ [А-Я][а-я]+',  # Russian full names
+                r'[А-Я][а-я]+ [А-Я]\.[А-Я]\.',  # Russian names with initials
+            ],
+            organization_patterns=[
+                r'[А-Я][А-Я\s]+(?:ООО|ОАО|ЗАО|ИП)',  # Russian business entities
+                r'[А-Я][а-я]+(?:Университет|Институт|Академия)',  # Russian educational institutions
+            ],
+            location_patterns=[
+                r'[А-Я][а-я]+(?:область|край|республика)',  # Russian administrative divisions
+                r'[А-Я][а-я]+(?:город|село|деревня)',  # Russian settlements
+            ]
+        )
+```
 
 ### Language Configuration Factory
 ```python
 class LanguageConfigFactory:
     @classmethod
     def get_config(cls, language_code: str) -> BaseLanguageConfig:
-        # Return language-specific configuration
+        """Return language-specific configuration with regex patterns."""
+        config_map = {
+            'zh': ChineseConfig(),
+            'ru': RussianConfig(),
+            'en': EnglishConfig(),
+            'ja': JapaneseConfig(),
+            'ko': KoreanConfig(),
+            'ar': ArabicConfig(),
+            'hi': HindiConfig(),
+        }
+        return config_map.get(language_code, EnglishConfig())
     
     @classmethod
     def detect_language_from_text(cls, text: str) -> str:
-        # Automatic language detection
+        """Automatic language detection with regex pattern matching."""
+        # Use language-specific detection patterns from config files
+        for lang_code, config in cls.get_all_configs().items():
+            if config.detect_language_pattern(text):
+                return lang_code
+        return 'en'  # Default to English
 ```
 
-### Supported Languages
-- **Chinese (zh)**: Modern and Classical Chinese
-- **Russian (ru)**: Cyrillic text processing
-- **English (en)**: Standard English processing
-- **Japanese (ja)**: Japanese with Kanji support
-- **Korean (ko)**: Korean text processing
-- **Arabic (ar)**: Arabic with RTL support
-- **Hindi (hi)**: Hindi text processing
+### Supported Languages with Regex Configuration
+- **Chinese (zh)**: Modern and Classical Chinese with character-based regex patterns
+- **Russian (ru)**: Cyrillic text processing with Russian-specific entity patterns
+- **English (en)**: Standard English processing with Latin alphabet patterns
+- **Japanese (ja)**: Japanese with Kanji, Hiragana, and Katakana regex support
+- **Korean (ko)**: Korean text processing with Hangul character patterns
+- **Arabic (ar)**: Arabic with RTL support and Arabic-specific patterns
+- **Hindi (hi)**: Hindi text processing with Devanagari script patterns
 
-### Language-Specific Features
-Each language configuration must include:
-- **Entity Patterns**: Regex patterns for entity extraction
-- **Processing Settings**: Language-specific parameters
-- **Ollama Models**: Appropriate model configurations
-- **Grammar Patterns**: Language-specific structures
-- **Detection Patterns**: Language identification patterns
+### Language-Specific Features (Configuration-Driven)
+Each language configuration MUST include:
+- **Entity Patterns**: Regex patterns for entity extraction stored in config files
+- **Processing Settings**: Language-specific parameters in configuration
+- **Ollama Models**: Appropriate model configurations per language
+- **Grammar Patterns**: Language-specific structures and rules
+- **Detection Patterns**: Language identification regex patterns
+- **Regex Parsing Parameters**: All language-specific regex parsing differences
 
-### Processing Pipeline
-1. **Language Detection**: Automatic detection from content
-2. **Configuration Loading**: Load language-specific settings
-3. **Entity Extraction**: Use language-appropriate patterns
-4. **Knowledge Graph Processing**: Apply language-specific rules
-5. **Result Generation**: Format results appropriately
+### Multilingual Processing Pipeline
+1. **Language Detection**: Automatic detection using config-based patterns
+2. **Configuration Loading**: Load language-specific settings from config files
+3. **Entity Extraction**: Use language-appropriate regex patterns from config
+4. **Knowledge Graph Processing**: Apply language-specific rules and patterns
+5. **Result Generation**: Format results appropriately for each language
+6. **MCP Tool Integration**: All processing goes through MCP tools
+7. **Testing and Verification**: Comprehensive testing before reporting success
+
+### MCP Tool Integration for Multilingual Processing
+```python
+@self.mcp.tool(description="Multilingual content processing with config-driven regex")
+async def process_multilingual_content(
+    content: str,
+    language: str = "auto",
+    entity_types: List[str] = None,
+    options: Dict[str, Any] = None
+) -> Dict[str, Any]:
+    """Process content with language-specific regex patterns from config files."""
+    try:
+        # 1. Detect language if auto
+        if language == "auto":
+            language = LanguageConfigFactory.detect_language_from_text(content)
+        
+        # 2. Load language-specific configuration
+        config = LanguageConfigFactory.get_config(language)
+        
+        # 3. Use language-specific regex patterns
+        entity_patterns = config.get_entity_patterns()
+        processing_settings = config.get_processing_settings()
+        
+        # 4. Process with language-appropriate patterns
+        result = await self.text_agent.process_with_language_config(
+            content, language, entity_patterns, processing_settings
+        )
+        
+        return {"success": True, "result": result, "language": language}
+    except Exception as e:
+        logger.error(f"Error in multilingual processing: {e}")
+        return {"success": False, "error": str(e)}
+```
+
+### File Integration Requirements
+When implementing multilingual features:
+1. **Update ALL related configuration files** in `/src/config/language_config/`
+2. **Update entity extraction patterns** for each supported language
+3. **Update MCP tool implementations** to use language-specific configs
+4. **Update testing framework** to test all language configurations
+5. **Update documentation** to reflect language-specific capabilities
+6. **Test and verify** all functionality before reporting success
 
 ---
 
@@ -1239,9 +1789,27 @@ Test/
 # Test results should be stored in Results/ directory
 # Test reports should include performance metrics
 
+# Multilingual-specific testing requirements
+.venv/Scripts/python.exe Test/multilingual/test_language_configs.py
+.venv/Scripts/python.exe Test/multilingual/test_regex_patterns.py
+.venv/Scripts/python.exe Test/multilingual/test_entity_extraction.py
+
+# MCP tool testing for multilingual support
+.venv/Scripts/python.exe Test/mcp/test_multilingual_mcp_tools.py
+.venv/Scripts/python.exe Test/mcp/test_entity_extraction_fix.py
+
 # MCP-specific testing
 # Test unified MCP server functionality
 .venv/Scripts/python.exe Test/test_unified_mcp_server.py
+
+# Test enhanced MCP server with Open Library support
+.venv/Scripts/python.exe Test/test_enhanced_mcp_server.py
+
+# Test Open Library integration
+.venv/Scripts/python.exe Test/test_openlibrary_integration.py
+
+# Test generic Open Library downloader
+.venv/Scripts/python.exe Test/test_generic_openlibrary_downloader.py
 
 # Test FastAPI + MCP integration
 curl http://localhost:8003/mcp
@@ -1253,14 +1821,25 @@ curl http://localhost:8003/mcp
 ### Test Requirements
 - [ ] All components must have unit tests
 - [ ] Integration tests for all workflows
-- [ ] Multilingual processing tests
+- [ ] Multilingual processing tests with language-specific regex patterns
+- [ ] Language configuration validation tests for all supported languages
+- [ ] Entity extraction tests with language-specific regex patterns
 - [ ] MCP tool functionality tests (25 unified tools)
+- [ ] MCP tool integration tests for multilingual support
+- [ ] Entity extraction fix validation tests
+- [ ] Open Library integration tests
+- [ ] Enhanced MCP server functionality tests
+- [ ] Content type detection tests
+- [ ] Vector database integration tests
+- [ ] Knowledge graph generation tests
 - [ ] Performance benchmarks
 - [ ] Error handling validation
 - [ ] FastAPI + MCP integration tests
 - [ ] Unified MCP server functionality tests
 - [ ] Windows process management tests
 - [ ] Asyncio thread conflict resolution tests
+- [ ] Comprehensive file integration tests for all related files
+- [ ] Script execution tests using .venv/Scripts/python.exe
 
 ---
 
@@ -1553,30 +2132,270 @@ pip install fastmcp==0.1.0 mcp==1.0.0
 
 ---
 
+## MCP Framework Fixes and Website Content Download Guidelines
+
+### Critical MCP Fix Applied (2025-08-14)
+
+#### Issue Identified
+- **Problem**: MCP server calling non-existent `store_document` method on `VectorDBManager`
+- **Location**: `src/mcp_servers/standalone_mcp_server.py` line 344
+- **Error**: `'VectorDBManager' object has no attribute 'store_document'`
+
+#### Solution Applied
+```python
+# Before (causing error):
+result = await self.vector_store.store_document(content, metadata or {})
+
+# After (working correctly):
+result = await self.vector_store.store_content(content, metadata or {})
+```
+
+#### Files Modified
+- `src/mcp_servers/standalone_mcp_server.py` - Fixed method call from `store_document` to `store_content`
+
+#### Verification Steps
+1. Restart MCP server after making changes
+2. Test vector database storage functionality
+3. Verify knowledge graph generation
+4. Confirm content processing pipeline
+
+### Website Content Download Framework
+
+#### Supported Sources
+1. **OpenLibrary.org** - Book metadata and content
+2. **Chinese Text Project (ctext.org)** - Classical Chinese texts
+3. **Internet Archive** - Historical documents and books
+4. **Custom websites** - Via enhanced web agent
+
+#### Implementation Pattern for New Websites
+
+##### 1. Content Detection
+```python
+def _detect_content_type(self, content: str) -> str:
+    """Detect content type based on content or file extension."""
+    if content.startswith("http"):
+        if "openlibrary.org" in content:
+            return "openlibrary"
+        elif "ctext.org" in content:
+            return "ctext"
+        elif "archive.org" in content:
+            return "archive"
+        else:
+            return "website"
+    # ... other detection logic
+```
+
+##### 2. MCP Tool Integration
+```python
+@self.mcp.tool(description="Process content from specific websites")
+async def process_website_content(
+    url: str,
+    content_type: str = "auto",
+    metadata: Dict[str, Any] = None
+) -> Dict[str, Any]:
+    """Process content from specific website types."""
+    try:
+        if content_type == "openlibrary":
+            result = await self.web_agent.process_openlibrary_content(url)
+        elif content_type == "ctext":
+            result = await self.web_agent.process_ctext_content(url)
+        elif content_type == "archive":
+            result = await self.web_agent.process_archive_content(url)
+        else:
+            result = await self.web_agent.scrape_website(url)
+        
+        return {"success": True, "result": result}
+    except Exception as e:
+        logger.error(f"Error processing website content: {e}")
+        return {"success": False, "error": str(e)}
+```
+
+##### 3. Vector Database Storage
+```python
+# Always use store_content method, not store_document
+result = await self.vector_store.store_content(content, metadata or {})
+```
+
+##### 4. Knowledge Graph Generation
+```python
+# Generate knowledge graph for processed content
+kg_result = await self.kg_agent.generate_knowledge_graph(content, "text")
+```
+
+#### Required Updates for New Website Integration
+
+##### 1. Update Content Type Detection
+- Add new website patterns to `_detect_content_type` method
+- Update MCP server tool registration
+
+##### 2. Create Website-Specific Agent Method
+```python
+async def process_newwebsite_content(self, url: str) -> Dict[str, Any]:
+    """Process content from new website."""
+    try:
+        # Fetch content from website
+        content = await self._fetch_website_content(url)
+        
+        # Extract metadata
+        metadata = self._extract_website_metadata(content)
+        
+        # Process content
+        processed_content = await self.text_agent.process_text(content)
+        
+        return {
+            "content": processed_content,
+            "metadata": metadata,
+            "source": url
+        }
+    except Exception as e:
+        logger.error(f"Error processing new website content: {e}")
+        raise
+```
+
+##### 3. Update MCP Server Tools
+- Add new tool to `_register_tools` method
+- Ensure proper error handling
+- Add to tool descriptions
+
+##### 4. Update Configuration
+- Add new website patterns to configuration files
+- Update language detection patterns
+- Add metadata extraction rules
+
+#### Testing Requirements for New Websites
+
+##### 1. Content Fetching Test
+```python
+async def test_new_website_content_fetching():
+    """Test content fetching from new website."""
+    url = "https://newwebsite.com/content"
+    result = await web_agent.process_newwebsite_content(url)
+    assert result["success"] == True
+    assert "content" in result["result"]
+```
+
+##### 2. Vector Database Storage Test
+```python
+async def test_vector_db_storage():
+    """Test vector database storage of new website content."""
+    content = "Test content from new website"
+    result = await vector_store.store_content(content, {"source": "newwebsite"})
+    assert result is not None
+```
+
+##### 3. Knowledge Graph Generation Test
+```python
+async def test_knowledge_graph_generation():
+    """Test knowledge graph generation from new website content."""
+    content = "Test content from new website"
+    result = await kg_agent.generate_knowledge_graph(content, "text")
+    assert result["success"] == True
+```
+
+#### Error Handling Standards
+
+##### 1. MCP Server Errors
+- Always log errors with context
+- Return structured error responses
+- Include error codes for debugging
+
+##### 2. Vector Database Errors
+- Check method availability before calling
+- Handle connection errors gracefully
+- Provide fallback storage options
+
+##### 3. Website Content Errors
+- Handle network timeouts
+- Implement retry mechanisms
+- Provide content validation
+
+#### Performance Considerations
+
+##### 1. Content Processing
+- Implement chunking for large content
+- Use async processing for multiple sources
+- Cache processed results
+
+##### 2. Vector Database
+- Batch operations when possible
+- Use appropriate collection strategies
+- Monitor storage usage
+
+##### 3. Knowledge Graph
+- Incremental updates for large graphs
+- Optimize entity extraction
+- Use efficient graph algorithms
+
+### Integration Checklist for New Websites
+
+- [ ] Add website pattern to content type detection
+- [ ] Create website-specific processing method
+- [ ] Update MCP server tool registration
+- [ ] Add proper error handling
+- [ ] Implement metadata extraction
+- [ ] Test content fetching
+- [ ] Test vector database storage
+- [ ] Test knowledge graph generation
+- [ ] Update configuration files
+- [ ] Add comprehensive tests
+- [ ] Update documentation
+- [ ] Verify MCP integration
+- [ ] Test performance with large content
+- [ ] Validate error handling scenarios
+
+---
+
 ## Compliance Checklist
 
 ### Before Any Implementation
 - [ ] Review this design framework
 - [ ] Ensure MCP compliance (unified server architecture)
-- [ ] Follow multilingual patterns
+- [ ] Follow multilingual patterns with configuration-driven regex parsing
+- [ ] Store all language-specific regex parsing parameters in `/src/config` files
+- [ ] Touch ALL related files when making changes
+- [ ] Test and verify everything working before reporting success
+- [ ] Use `.venv/Scripts/python.exe` for all script execution
+- [ ] Integrate all functionality into MCP tools with proper testing
 - [ ] Implement proper error handling
 - [ ] Add comprehensive tests
 - [ ] Update documentation
 - [ ] Verify FastMCP integration patterns
 - [ ] Test Windows process management
 - [ ] Validate asyncio thread handling
+- [ ] Test Open Library integration patterns
+- [ ] Validate content type detection
+- [ ] Verify vector database integration
+- [ ] Test knowledge graph generation
+- [ ] Verify MCP server method calls (use `store_content`, not `store_document`)
+- [ ] Test website content download functionality
+- [ ] Validate error handling for vector database operations
+- [ ] Test entity extraction with language-specific regex patterns
+- [ ] Validate multilingual configuration files for all supported languages
 
 ### Before Deployment
-- [ ] All tests passing
+- [ ] All tests passing including multilingual tests
 - [ ] Performance benchmarks met
 - [ ] Security review completed
 - [ ] Documentation updated
-- [ ] Configuration validated
+- [ ] Configuration validated for all supported languages
 - [ ] Monitoring in place
 - [ ] MCP server integration verified
 - [ ] 25 unified tools functionality confirmed
 - [ ] FastAPI + MCP integration tested
 - [ ] Windows process management validated
+- [ ] Open Library integration tested
+- [ ] Enhanced MCP server functionality verified
+- [ ] Content type detection validated
+- [ ] Vector database integration confirmed
+- [ ] Knowledge graph generation tested
+- [ ] MCP server method calls verified (store_content vs store_document)
+- [ ] Website content download functionality tested
+- [ ] Vector database error handling validated
+- [ ] Knowledge graph generation from website content tested
+- [ ] Multilingual regex parsing configuration validated
+- [ ] Entity extraction fix verified for all languages
+- [ ] All related files updated and tested
+- [ ] Script execution using .venv/Scripts/python.exe verified
 
 ---
 
@@ -1593,6 +2412,191 @@ pip install fastmcp==0.1.0 mcp==1.0.0
 - **Descriptive commit messages**
 - **Reference issue numbers**
 - **Include test updates**
+
+---
+
+## System Restart Framework
+
+### Overview
+The System Restart Framework provides comprehensive process management and restart capabilities for development and testing scenarios. This framework ensures proper cleanup of existing processes and verification of system readiness.
+
+### Restart Manager Implementation
+```python
+# Comprehensive restart mechanism for development and testing
+import subprocess
+import time
+import os
+import signal
+import psutil
+from pathlib import Path
+
+class SystemRestartManager:
+    """Manages system restart with proper process cleanup and verification."""
+    
+    def __init__(self, project_root: str = None):
+        self.project_root = Path(project_root) if project_root else Path.cwd()
+        self.main_script = self.project_root / "main.py"
+        self.python_exe = self.project_root / ".venv" / "Scripts" / "python.exe"
+        
+    def kill_python_processes(self):
+        """Kill all Python processes safely."""
+        try:
+            # Method 1: Use taskkill on Windows
+            if os.name == 'nt':  # Windows
+                subprocess.run(["taskkill", "/f", "/im", "python.exe"], 
+                             capture_output=True, check=False)
+                subprocess.run(["taskkill", "/f", "/im", "pythonw.exe"], 
+                             capture_output=True, check=False)
+            else:  # Unix/Linux
+                subprocess.run(["pkill", "-f", "python"], 
+                             capture_output=True, check=False)
+            
+            # Method 2: Use psutil for more precise control
+            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                try:
+                    if proc.info['name'] and 'python' in proc.info['name'].lower():
+                        if any('main.py' in str(cmd) for cmd in proc.info['cmdline'] or []):
+                            proc.terminate()
+                            proc.wait(timeout=5)
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.TimeoutExpired):
+                    pass
+            
+            print("✅ Python processes terminated")
+            time.sleep(2)  # Wait for processes to fully terminate
+            
+        except Exception as e:
+            print(f"⚠️ Warning: Could not terminate processes: {e}")
+    
+    def wait_for_server_ready(self, timeout: int = 30, check_interval: int = 1):
+        """Wait for server to be ready with countdown."""
+        print(f"⏳ Waiting {timeout} seconds for server to be ready...")
+        for i in range(timeout, 0, -1):
+            print(f"   {i} seconds remaining...", end="\r")
+            time.sleep(check_interval)
+        print("\n🚀 Server should be ready now!")
+    
+    def restart_system(self, wait_time: int = 30):
+        """Complete system restart with verification."""
+        print("🔄 Starting system restart...")
+        print("=" * 50)
+        
+        # Step 1: Kill existing processes
+        print("1️⃣ Killing existing Python processes...")
+        self.kill_python_processes()
+        
+        # Step 2: Wait for cleanup
+        print("2️⃣ Waiting for process cleanup...")
+        time.sleep(3)
+        
+        # Step 3: Start main.py
+        print("3️⃣ Starting main.py...")
+        try:
+            if not self.python_exe.exists():
+                print(f"❌ Python executable not found at: {self.python_exe}")
+                return False
+                
+            if not self.main_script.exists():
+                print(f"❌ Main script not found at: {self.main_script}")
+                return False
+            
+            # Start main.py in background
+            process = subprocess.Popen(
+                [str(self.python_exe), str(self.main_script)],
+                cwd=self.project_root,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            
+            print(f"✅ main.py started with PID: {process.pid}")
+            
+        except Exception as e:
+            print(f"❌ Failed to start main.py: {e}")
+            return False
+        
+        # Step 4: Wait for server to be ready
+        print("4️⃣ Waiting for server initialization...")
+        self.wait_for_server_ready(wait_time)
+        
+        # Step 5: Verify server is running
+        print("5️⃣ Verifying server status...")
+        return self.verify_server_status()
+    
+    def verify_server_status(self):
+        """Verify that the server is running properly."""
+        import requests
+        
+        endpoints = [
+            ("http://localhost:8003/health", "FastAPI Health"),
+            ("http://localhost:8003/mcp", "MCP Server"),
+            ("http://localhost:8003/mcp/", "MCP Server (trailing slash)"),
+            ("http://localhost:8003/mcp-health", "MCP Health"),
+            ("http://localhost:8501", "Streamlit Main UI"),
+            ("http://localhost:8502", "Streamlit Landing Page")
+        ]
+        
+        all_ok = True
+        print("🔍 Checking server endpoints...")
+        
+        for url, name in endpoints:
+            try:
+                response = requests.get(url, timeout=5)
+                if response.status_code in [200, 404]:  # 404 is OK for some endpoints
+                    print(f"✅ {name}: {response.status_code}")
+                else:
+                    print(f"⚠️ {name}: {response.status_code}")
+                    all_ok = False
+            except requests.exceptions.ConnectionError:
+                print(f"❌ {name}: Connection refused")
+                all_ok = False
+            except Exception as e:
+                print(f"❌ {name}: Error - {e}")
+                all_ok = False
+        
+        if all_ok:
+            print("🎉 System restart completed successfully!")
+        else:
+            print("⚠️ Some endpoints may not be ready yet. Check server logs.")
+        
+        return all_ok
+
+# Usage example:
+def restart_and_verify():
+    """Restart the system and verify it's working."""
+    restart_manager = SystemRestartManager()
+    success = restart_manager.restart_system(wait_time=30)
+    
+    if success:
+        print("✅ System is ready for use!")
+        print("🌐 Access URLs:")
+        print("   📊 Main UI:        http://localhost:8501")
+        print("   🏠 Landing Page:   http://localhost:8502")
+        print("   🔗 API Docs:       http://localhost:8003/docs")
+        print("   🤖 MCP Server:     http://localhost:8003/mcp")
+    else:
+        print("❌ System restart failed. Check logs for details.")
+    
+    return success
+
+# Quick restart function for development
+def quick_restart():
+    """Quick restart for development (15 second wait)."""
+    restart_manager = SystemRestartManager()
+    return restart_manager.restart_system(wait_time=15)
+```
+
+### Usage Guidelines
+1. **Development Restart**: Use `quick_restart()` for fast development cycles (15 seconds)
+2. **Full Restart**: Use `restart_and_verify()` for complete system verification (30 seconds)
+3. **Custom Restart**: Use `SystemRestartManager()` for custom configurations
+4. **Verification**: Always verify server status after restart
+5. **Logs**: Check server logs if verification fails
+
+### Integration with Testing
+- Use restart framework before running comprehensive tests
+- Verify MCP server endpoints after restart
+- Test both `/mcp` and `/mcp/` endpoints
+- Ensure all services are running before proceeding
 
 ---
 

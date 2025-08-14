@@ -723,6 +723,86 @@ class EnhancedFileExtractionAgent(StrandsBaseAgent):
         except Exception as e:
             logger.warning(f"Failed to store in vector DB: {e}")
 
+    # Interface method for MCP server compatibility
+    async def extract_text_from_pdf(self, content: str, options: dict = None) -> dict:
+        """
+        Extract text from PDF content - interface method for MCP server.
+        
+        Args:
+            content: The PDF content to extract text from
+            options: Extraction options including:
+                - language: Language code (e.g., "zh", "en")
+                - pdf_type: Type of Chinese PDF ("classical_chinese", "modern_chinese", "mixed_chinese")
+                - sample_only: If True, only extract a sample for language detection
+                - enhanced_processing: If True, use enhanced processing for Chinese PDFs
+            
+        Returns:
+            Text extraction result
+        """
+        try:
+            options = options or {}
+            
+            # Handle sample extraction for language detection
+            if options.get("sample_only"):
+                # Extract only first few pages for language detection
+                try:
+                    import fitz
+                    doc = fitz.open(content)
+                    sample_text = ""
+                    for page_num in range(min(3, len(doc))):
+                        page = doc[page_num]
+                        sample_text += page.get_text()
+                        if len(sample_text) > 1000:
+                            break
+                    doc.close()
+                    
+                    return {
+                        "status": "success",
+                        "extracted_text": sample_text,
+                        "processing_time": 0.0,
+                        "metadata": {"sample_only": True},
+                        "language": options.get("language", "auto")
+                    }
+                except Exception as e:
+                    logger.error(f"Sample extraction failed: {e}")
+                    return {
+                        "status": "error",
+                        "error": str(e),
+                        "extracted_text": ""
+                    }
+            
+            # Create analysis request with enhanced options
+            request = AnalysisRequest(
+                data_type=DataType.PDF,
+                content=content,
+                language=options.get("language", "en"),
+                metadata={
+                    **options,
+                    "pdf_type": options.get("pdf_type"),
+                    "enhanced_processing": options.get("enhanced_processing", True),
+                    "language_specific": True if options.get("language") in ["zh", "ru", "ar", "ja", "ko", "hi"] else False
+                }
+            )
+            
+            # Process using the main process method
+            result = await self.process(request)
+            
+            return {
+                "status": "success",
+                "extracted_text": result.extracted_text,
+                "processing_time": result.processing_time,
+                "metadata": result.metadata,
+                "language": getattr(result, 'language', options.get("language", "en")),
+                "pdf_type": options.get("pdf_type")
+            }
+        except Exception as e:
+            logger.error(f"PDF text extraction failed: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "extracted_text": ""
+            }
+
 
 class MemoryMonitor:
     """Memory monitoring and cleanup utility."""
@@ -760,3 +840,6 @@ class MemoryMonitor:
             logger.debug("Forced memory cleanup performed")
         except Exception as e:
             logger.warning(f"Forced memory cleanup failed: {e}")
+
+
+

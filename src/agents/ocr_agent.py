@@ -120,7 +120,7 @@ class OCRAgent(BaseAgent):
             
             # Create comprehensive result
             result = AnalysisResult(
-                request_id=request.request_id,
+                request_id=request.id,
                 data_type=DataType.IMAGE,
                 content=request.content,
                 sentiment=SentimentResult(
@@ -145,7 +145,7 @@ class OCRAgent(BaseAgent):
         except Exception as e:
             logger.error(f"❌ OCR analysis failed: {e}")
             return AnalysisResult(
-                request_id=request.request_id,
+                request_id=request.id,
                 data_type=DataType.IMAGE,
                 content=request.content,
                 sentiment=SentimentResult(

@@ -236,6 +236,17 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"⚠️ Warning: Could not initialize performance monitoring system: {e}")
     
+    # Initialize data ingestion service
+    print("Initializing data ingestion service...")
+    try:
+        from src.core.data_ingestion_service import data_ingestion_service
+        supported_languages = data_ingestion_service.get_supported_languages()
+        print(f"✅ Data ingestion service initialized with {len(supported_languages)} supported languages:")
+        for code, name in supported_languages.items():
+            print(f"   - {code}: {name}")
+    except Exception as e:
+        print(f"⚠️ Warning: Could not initialize data ingestion service: {e}")
+    
     # Create MCP server for integration
     print("Creating MCP server for integration...")
     mcp_server = start_mcp_server()
@@ -255,14 +266,41 @@ if __name__ == "__main__":
     # Integrate MCP server with FastAPI if available
     if mcp_server:
         try:
-            mcp_app = mcp_server.get_http_app(path="/mcp")
+            # Create MCP app without path prefix - we'll handle the mounting ourselves
+            mcp_app = mcp_server.get_http_app(path="")
             if mcp_app:
                 # Mount the MCP app to the FastAPI app
                 from src.api.main import app
                 app.mount("/mcp", mcp_app)
-                print("✅ MCP server integrated with FastAPI at /mcp")
+                
+                # Also mount at /mcp/ for compatibility
+                app.mount("/mcp/", mcp_app)
+                
+                print("✅ MCP server integrated with FastAPI at /mcp and /mcp/")
+                print("   Note: Clients must use MCP protocol with 'initialize' method first")
+                
+                # Add a simple health check endpoint for MCP
+                @app.get("/mcp-health")
+                async def mcp_health_check():
+                    return {
+                        "status": "healthy", 
+                        "service": "mcp_server", 
+                        "endpoints": ["/mcp", "/mcp/"],
+                        "protocol": "MCP (Model Context Protocol)",
+                        "note": "Use 'initialize' method to establish session"
+                    }
+                    
         except Exception as e:
             print(f"⚠️ Warning: Could not integrate MCP server: {e}")
+            # Add fallback MCP endpoint
+            from src.api.main import app
+            @app.get("/mcp")
+            async def mcp_fallback():
+                return {"error": "MCP server not available", "status": "unavailable"}
+            
+            @app.get("/mcp/")
+            async def mcp_fallback_trailing():
+                return {"error": "MCP server not available", "status": "unavailable"}
     
     # Start standalone MCP server for Strands integration
     print("\nStarting standalone MCP server for Strands integration...")

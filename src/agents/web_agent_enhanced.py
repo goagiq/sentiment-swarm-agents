@@ -593,3 +593,46 @@ class EnhancedWebAgent(BaseAgent):
         except Exception as e:
             logger.error(f"Fallback analysis failed: {e}")
             return {"error": str(e)}
+
+    # Interface method for MCP server compatibility
+    async def scrape_website(self, content: str, options: dict = None) -> dict:
+        """
+        Scrape website content - interface method for MCP server.
+        
+        Args:
+            content: The website URL to scrape
+            options: Scraping options
+            
+        Returns:
+            Website scraping result
+        """
+        try:
+            # Create analysis request
+            request = AnalysisRequest(
+                data_type=DataType.WEBPAGE,
+                content=content,
+                language=options.get("language", "en") if options else "en",
+                metadata=options or {}
+            )
+            
+            # Process using the main process method
+            result = await self.process(request)
+            
+            return {
+                "status": "success",
+                "url": content,
+                "title": result.metadata.get("title", ""),
+                "extracted_text": result.extracted_text,
+                "sentiment": result.sentiment.label if result.sentiment else "neutral",
+                "confidence": result.sentiment.confidence if result.sentiment else 0.0,
+                "processing_time": result.processing_time,
+                "metadata": result.metadata
+            }
+        except Exception as e:
+            logger.error(f"Website scraping failed: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "url": content,
+                "extracted_text": ""
+            }

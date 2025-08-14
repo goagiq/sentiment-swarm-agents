@@ -5,8 +5,15 @@ metadata:
   namespace: sentiment-analysis
   labels:
     app: sentiment-analysis
+    version: v1.0.0
+    environment: production
 spec:
   replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: sentiment-analysis
@@ -14,7 +21,23 @@ spec:
     metadata:
       labels:
         app: sentiment-analysis
+        version: v1.0.0
+        environment: production
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8003"
+        prometheus.io/path: "/metrics"
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
       containers:
       - name: sentiment-analysis
         image: sentiment-analysis:latest
@@ -22,12 +45,19 @@ spec:
         ports:
         - name: mcp
           containerPort: 8000
+          protocol: TCP
         - name: api
           containerPort: 8003
+          protocol: TCP
         - name: streamlit-main
           containerPort: 8501
+          protocol: TCP
         - name: streamlit-landing
           containerPort: 8502
+          protocol: TCP
+        - name: metrics
+          containerPort: 9090
+          protocol: TCP
         envFrom:
         - configMapRef:
             name: sentiment-config
@@ -36,6 +66,14 @@ spec:
         env:
         - name: NODE_ENV
           value: "production"
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         resources:
           requests:
             memory: "1Gi"
@@ -47,25 +85,68 @@ spec:
           httpGet:
             path: /health
             port: 8003
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
+            httpHeaders:
+            - name: User-Agent
+              value: kube-probe/1.0
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
           failureThreshold: 3
+          successThreshold: 1
         readinessProbe:
           httpGet:
             path: /health
             port: 8003
-          initialDelaySeconds: 5
-          periodSeconds: 5
-          timeoutSeconds: 3
+            httpHeaders:
+            - name: User-Agent
+              value: kube-probe/1.0
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
           failureThreshold: 3
+          successThreshold: 1
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8003
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
         volumeMounts:
         - name: data-volume
           mountPath: /app/data
+          readOnly: false
         - name: cache-volume
           mountPath: /app/cache
+          readOnly: false
         - name: logs-volume
           mountPath: /app/logs
+          readOnly: false
+        - name: temp-volume
+          mountPath: /app/temp
+          readOnly: false
+        - name: backups-volume
+          mountPath: /app/backups
+          readOnly: false
+        - name: results-volume
+          mountPath: /app/Results
+          readOnly: false
+        - name: ssl-certs
+          mountPath: /etc/ssl/certs
+          readOnly: true
+        - name: ssl-keys
+          mountPath: /etc/ssl/private
+          readOnly: true
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          capabilities:
+            drop:
+              - ALL
       volumes:
       - name: data-volume
         persistentVolumeClaim:
@@ -75,4 +156,28 @@ spec:
           claimName: sentiment-cache-pvc
       - name: logs-volume
         emptyDir: {}
+      - name: temp-volume
+        emptyDir: {}
+      - name: backups-volume
+        persistentVolumeClaim:
+          claimName: sentiment-backups-pvc
+      - name: results-volume
+        persistentVolumeClaim:
+          claimName: sentiment-results-pvc
+      - name: ssl-certs
+        secret:
+          secretName: ssl-certificates
+          items:
+          - key: tls.crt
+            path: sentiment-analysis.crt
+      - name: ssl-keys
+        secret:
+          secretName: ssl-certificates
+          items:
+          - key: tls.key
+            path: sentiment-analysis.key
       restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      imagePullSecrets:
+      - name: registry-secret

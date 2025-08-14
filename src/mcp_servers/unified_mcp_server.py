@@ -7,6 +7,7 @@ and following the design framework.
 """
 
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
@@ -45,6 +46,10 @@ from src.agents.advanced_ml_agent import AdvancedMLAgent
 # flake8: noqa: E402
 from config.mcp_config import ConsolidatedMCPServerConfig
 from config.config import config
+
+# Import report manager
+# flake8: noqa: E402
+from core.report_manager import report_manager
 
 # Try to import FastMCP for MCP server functionality
 try:
@@ -97,6 +102,14 @@ class UnifiedMCPServer:
             logger.warning(f"⚠️ Could not initialize ScenarioAnalysisAgent: {e}")
             self.scenario_agent = None
 
+        # Initialize enhanced decision support agent
+        try:
+            from src.agents.decision_support_agent import DecisionSupportAgent
+            self.decision_support_agent = DecisionSupportAgent()
+        except Exception as e:
+            logger.warning(f"⚠️ Could not initialize DecisionSupportAgent: {e}")
+            self.decision_support_agent = None
+
         # Initialize MCP server
         self._initialize_mcp()
 
@@ -128,18 +141,33 @@ class UnifiedMCPServer:
             return
 
         # Content Processing Tools (5)
-        @self.mcp.tool(description="Unified content processing for all types")
+        @self.mcp.tool(description="Enhanced unified content processing with bulk import and Open Library support")
         async def process_content(
             content: str,
             content_type: str = "auto",
             language: str = "en",
             options: Dict[str, Any] = None
         ) -> Dict[str, Any]:
-            """Process any type of content with unified interface."""
+            """Process any type of content with unified interface, including bulk import requests and Open Library URLs."""
             try:
                 # Auto-detect content type if not specified
                 if content_type == "auto":
                     content_type = self._detect_content_type(content)
+                
+                # Check for bulk import requests first
+                if self._detect_bulk_import_request(content):
+                    logger.info("Detected bulk import request, processing multiple URLs...")
+                    return await self._process_bulk_import_request(content, language, options)
+                
+                # Check for Open Library URLs
+                if self._is_openlibrary_url(content):
+                    logger.info("Detected Open Library URL, processing with enhanced agent...")
+                    return await self._process_openlibrary_content(content, language, options)
+                
+                # Check for ctext.org URLs
+                if self._is_ctext_url(content):
+                    logger.info("Detected ctext.org URL, processing with enhanced agent...")
+                    return await self._process_ctext_content(content, language, options)
 
                 # Route to appropriate agent based on content type
                 if content_type in ["text", "pdf"]:
@@ -256,14 +284,13 @@ class UnifiedMCPServer:
         # Analysis & Intelligence Tools (5)
         @self.mcp.tool(description="Sentiment analysis with multilingual support")
         async def analyze_sentiment(
-            content: str,
-            language: str = "en",
-            detailed: bool = True
+            text: str,
+            language: str = "en"
         ) -> Dict[str, Any]:
             """Analyze sentiment with multilingual support."""
             try:
                 result = await self.text_agent.analyze_sentiment(
-                    content, language, detailed
+                    text, language
                 )
                 return {"success": True, "result": result}
             except Exception as e:
@@ -272,14 +299,23 @@ class UnifiedMCPServer:
 
         @self.mcp.tool(description="Entity extraction and relationship mapping")
         async def extract_entities(
-            content: str,
-            language: str = "en",
+            text: str,
             entity_types: List[str] = None
         ) -> Dict[str, Any]:
             """Extract entities and relationships."""
             try:
+                # Handle entity_types parameter properly
+                if entity_types is None:
+                    entity_types = ["PERSON", "ORGANIZATION", "LOCATION", "EVENT"]
+                elif isinstance(entity_types, str):
+                    # Convert string to list if needed
+                    entity_types = [entity_types.upper()]
+                elif isinstance(entity_types, list):
+                    # Ensure all types are uppercase
+                    entity_types = [et.upper() if isinstance(et, str) else str(et).upper() for et in entity_types]
+                
                 result = await self.kg_agent.extract_entities(
-                    content, language, entity_types
+                    text, "en", entity_types
                 )
                 return {"success": True, "result": result}
             except Exception as e:
@@ -326,16 +362,231 @@ class UnifiedMCPServer:
             visualization_type: str = "auto",
             options: Dict[str, Any] = None
         ) -> Dict[str, Any]:
-            """Create data visualizations."""
+            """Create data visualizations with automatic saving."""
             try:
-                # Implementation for visualization creation
-                result = {
-                    "visualization": "generated_visualization",
-                    "type": visualization_type
-                }
-                return {"success": True, "result": result}
+                # Generate HTML visualization content
+                html_content = self._generate_visualization_html(
+                    data, visualization_type, options
+                )
+                
+                # Generate title for the visualization
+                title = f"{visualization_type.title()} Visualization"
+                
+                # Save visualization using report manager
+                save_result = report_manager.save_visualization(
+                    html_content=html_content,
+                    title=title,
+                    visualization_type=visualization_type,
+                    metadata={
+                        "data_keys": list(data.keys()) if data else [],
+                        "options": options or {},
+                        "generated_by": "mcp_server"
+                    }
+                )
+                
+                if save_result["success"]:
+                    return {
+                        "success": True,
+                        "result": {
+                            "visualization": "generated_visualization",
+                            "type": visualization_type,
+                            "saved_to": save_result["visualization_info"]["relative_path"],
+                            "filename": save_result["visualization_info"]["filename"]
+                        },
+                        "visualization_info": save_result["visualization_info"]
+                    }
+                else:
+                    return {"success": False, "error": save_result["error"]}
+                    
             except Exception as e:
                 logger.error(f"Error creating visualizations: {e}")
+                return {"success": False, "error": str(e)}
+
+        # Decision Support Tools (7)
+        @self.mcp.tool(description="Query knowledge graph for decision context")
+        async def query_decision_context(
+            content: str,
+            language: str = "en",
+            context_type: str = "comprehensive"
+        ) -> Dict[str, Any]:
+            """Query knowledge graph for decision-making context."""
+            try:
+                if self.decision_support_agent:
+                    from src.core.models import AnalysisRequest
+                    request = AnalysisRequest(
+                        data_type="text",
+                        content=content,
+                        language=language
+                    )
+                    context = await self.decision_support_agent.knowledge_graph_integrator.extract_decision_context(
+                        request, language
+                    )
+                    return {"success": True, "result": {
+                        "business_entities": len(context.business_entities),
+                        "market_entities": len(context.market_entities),
+                        "risk_entities": len(context.risk_entities),
+                        "opportunity_entities": len(context.opportunity_entities),
+                        "confidence_score": context.confidence_score,
+                        "language": context.language
+                    }}
+                else:
+                    return {"success": False, "error": "Decision support agent not available"}
+            except Exception as e:
+                logger.error(f"Error querying decision context: {e}")
+                return {"success": False, "error": str(e)}
+
+        @self.mcp.tool(description="Extract entities for decision support")
+        async def extract_entities_for_decisions(
+            content: str,
+            language: str = "en",
+            entity_types: List[str] = None
+        ) -> Dict[str, Any]:
+            """Extract entities specifically for decision support analysis."""
+            try:
+                if self.decision_support_agent:
+                    from src.core.models import AnalysisRequest
+                    request = AnalysisRequest(
+                        data_type="text",
+                        content=content,
+                        language=language
+                    )
+                    entities = await self.decision_support_agent.knowledge_graph_integrator._extract_entities_from_content(
+                        content, language
+                    )
+                    return {"success": True, "result": {
+                        "entities": entities,
+                        "count": len(entities),
+                        "language": language
+                    }}
+                else:
+                    return {"success": False, "error": "Decision support agent not available"}
+            except Exception as e:
+                logger.error(f"Error extracting entities for decisions: {e}")
+                return {"success": False, "error": str(e)}
+
+        @self.mcp.tool(description="Analyze decision patterns")
+        async def analyze_decision_patterns(
+            entity_name: str,
+            pattern_type: str = "business_patterns",
+            language: str = "en",
+            time_window: str = "1_year"
+        ) -> Dict[str, Any]:
+            """Analyze historical decision patterns for an entity."""
+            try:
+                if self.decision_support_agent:
+                    # Create mock entity for pattern analysis
+                    entity = {"name": entity_name, "type": "organization"}
+                    patterns = await self.decision_support_agent.knowledge_graph_integrator._find_business_patterns(
+                        entity, language
+                    )
+                    return {"success": True, "result": {
+                        "patterns": patterns,
+                        "count": len(patterns),
+                        "entity_name": entity_name,
+                        "pattern_type": pattern_type
+                    }}
+                else:
+                    return {"success": False, "error": "Decision support agent not available"}
+            except Exception as e:
+                logger.error(f"Error analyzing decision patterns: {e}")
+                return {"success": False, "error": str(e)}
+
+        @self.mcp.tool(description="Generate AI-powered recommendations")
+        async def generate_recommendations(
+            business_context: str,
+            current_performance: Dict[str, Any] = None,
+            market_conditions: Dict[str, Any] = None,
+            resource_constraints: Dict[str, Any] = None,
+            language: str = "en"
+        ) -> Dict[str, Any]:
+            """Generate AI-powered recommendations based on context."""
+            try:
+                if self.decision_support_agent:
+                    from src.core.models import AnalysisRequest
+                    request = AnalysisRequest(
+                        data_type="text",
+                        content=business_context,
+                        language=language
+                    )
+                    result = await self.decision_support_agent.process(request)
+                    return {"success": True, "result": result.metadata}
+                else:
+                    return {"success": False, "error": "Decision support agent not available"}
+            except Exception as e:
+                logger.error(f"Error generating recommendations: {e}")
+                return {"success": False, "error": str(e)}
+
+        @self.mcp.tool(description="Prioritize actions and recommendations")
+        async def prioritize_actions(
+            recommendations: List[str],
+            available_resources: Dict[str, Any] = None,
+            time_constraints: Dict[str, Any] = None,
+            stakeholder_preferences: Dict[str, Any] = None
+        ) -> Dict[str, Any]:
+            """Prioritize actions and recommendations based on multiple factors."""
+            try:
+                if self.decision_support_agent:
+                    # Create mock request for prioritization
+                    from src.core.models import AnalysisRequest
+                    request = AnalysisRequest(
+                        data_type="text",
+                        content=" ".join(recommendations),
+                        language="en"
+                    )
+                    result = await self.decision_support_agent._prioritize_actions_only(request)
+                    return {"success": True, "result": result.metadata}
+                else:
+                    return {"success": False, "error": "Decision support agent not available"}
+            except Exception as e:
+                logger.error(f"Error prioritizing actions: {e}")
+                return {"success": False, "error": str(e)}
+
+        @self.mcp.tool(description="Create implementation plans")
+        async def create_implementation_plans(
+            recommendation: str,
+            available_resources: Dict[str, Any] = None,
+            budget_constraints: float = None,
+            timeline_constraints: int = None
+        ) -> Dict[str, Any]:
+            """Create detailed implementation plans for recommendations."""
+            try:
+                if self.decision_support_agent:
+                    from src.core.models import AnalysisRequest
+                    request = AnalysisRequest(
+                        data_type="text",
+                        content=recommendation,
+                        language="en"
+                    )
+                    result = await self.decision_support_agent._create_implementation_plan_only(request)
+                    return {"success": True, "result": result.metadata}
+                else:
+                    return {"success": False, "error": "Decision support agent not available"}
+            except Exception as e:
+                logger.error(f"Error creating implementation plans: {e}")
+                return {"success": False, "error": str(e)}
+
+        @self.mcp.tool(description="Predict success likelihood")
+        async def predict_success(
+            recommendation: str,
+            historical_data: Dict[str, Any] = None,
+            organizational_capabilities: Dict[str, Any] = None,
+            market_conditions: Dict[str, Any] = None
+        ) -> Dict[str, Any]:
+            """Predict likelihood of success for recommendations."""
+            try:
+                if self.decision_support_agent:
+                    from src.core.models import AnalysisRequest
+                    request = AnalysisRequest(
+                        data_type="text",
+                        content=recommendation,
+                        language="en"
+                    )
+                    result = await self.decision_support_agent._predict_success_only(request)
+                    return {"success": True, "result": result.metadata}
+                else:
+                    return {"success": False, "error": "Decision support agent not available"}
+            except Exception as e:
+                logger.error(f"Error predicting success: {e}")
                 return {"success": False, "error": str(e)}
 
         # Agent Management Tools (3)
@@ -588,20 +839,47 @@ class UnifiedMCPServer:
             language: str = "en",
             options: Dict[str, Any] = None
         ) -> Dict[str, Any]:
-            """Generate comprehensive reports."""
+            """Generate comprehensive reports with automatic saving."""
             try:
-                # Implementation for report generation
-                result = {"report": "generated_report", "type": report_type}
-                return {"success": True, "result": result}
+                # Generate filename based on content and type
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"{report_type}_Report_{timestamp}.md"
+                
+                # Save report using report manager
+                save_result = report_manager.save_report(
+                    content=content,
+                    filename=filename,
+                    report_type=report_type,
+                    metadata={
+                        "language": language,
+                        "options": options or {},
+                        "generated_by": "mcp_server"
+                    }
+                )
+                
+                if save_result["success"]:
+                    return {
+                        "success": True,
+                        "result": {
+                            "report": "generated_report",
+                            "type": report_type,
+                            "saved_to": save_result["report_info"]["relative_path"],
+                            "filename": save_result["report_info"]["filename"]
+                        },
+                        "report_info": save_result["report_info"]
+                    }
+                else:
+                    return {"success": False, "error": save_result["error"]}
+                    
             except Exception as e:
                 logger.error(f"Error generating report: {e}")
                 return {"success": False, "error": str(e)}
 
         @self.mcp.tool(description="Interactive dashboard creation")
         async def create_dashboard(
-            data: Dict[str, Any],
-            dashboard_type: str = "interactive",
-            options: Dict[str, Any] = None
+            dashboard_type: str,
+            data_sources: List[str],
+            layout: Dict[str, Any] = None
         ) -> Dict[str, Any]:
             """Create interactive dashboards."""
             try:
@@ -614,29 +892,89 @@ class UnifiedMCPServer:
 
         @self.mcp.tool(description="Result export to various formats")
         async def export_results(
-            results: Dict[str, Any],
+            result_type: str,
             format: str = "json",
-            options: Dict[str, Any] = None
+            destination: str = None
         ) -> Dict[str, Any]:
             """Export results to various formats."""
             try:
                 # Implementation for result export
-                result = {"exported_results": results, "format": format}
+                result = {"exported_results": result_type, "format": format}
                 return {"success": True, "result": result}
             except Exception as e:
                 logger.error(f"Error exporting results: {e}")
                 return {"success": False, "error": str(e)}
 
+        @self.mcp.tool(description="Generate summary report with all generated reports")
+        async def generate_summary_report(
+            analysis_title: str,
+            analysis_type: str = "comprehensive",
+            key_findings: List[str] = None
+        ) -> Dict[str, Any]:
+            """Generate a summary report with links to all generated reports."""
+            try:
+                summary_result = report_manager.generate_summary_report(
+                    analysis_title=analysis_title,
+                    analysis_type=analysis_type,
+                    key_findings=key_findings or []
+                )
+                
+                if summary_result["success"]:
+                    return {
+                        "success": True,
+                        "result": {
+                            "summary": "generated_summary",
+                            "title": analysis_title,
+                            "saved_to": summary_result["summary_info"]["relative_path"],
+                            "filename": summary_result["summary_info"]["filename"],
+                            "total_reports": summary_result["summary_info"]["total_reports"]
+                        },
+                        "summary_info": summary_result["summary_info"],
+                        "all_reports": summary_result["all_reports"]
+                    }
+                else:
+                    return {"success": False, "error": summary_result["message"]}
+                    
+            except Exception as e:
+                logger.error(f"Error generating summary report: {e}")
+                return {"success": False, "error": str(e)}
+
+        @self.mcp.tool(description="Get all generated reports")
+        async def get_generated_reports() -> Dict[str, Any]:
+            """Get information about all generated reports."""
+            try:
+                reports = report_manager.get_all_reports()
+                return {
+                    "success": True,
+                    "total_reports": len(reports),
+                    "reports": reports,
+                    "total_size_kb": sum(r["size_kb"] for r in reports)
+                }
+            except Exception as e:
+                logger.error(f"Error getting generated reports: {e}")
+                return {"success": False, "error": str(e)}
+
+        @self.mcp.tool(description="Clear generated reports for new session")
+        async def clear_reports() -> Dict[str, Any]:
+            """Clear the generated reports list for a new analysis session."""
+            try:
+                report_manager.clear_reports()
+                return {
+                    "success": True,
+                    "message": "Reports cleared for new analysis session"
+                }
+            except Exception as e:
+                logger.error(f"Error clearing reports: {e}")
+                return {"success": False, "error": str(e)}
+
         @self.mcp.tool(description="Automated report scheduling")
         async def schedule_reports(
-            report_config: Dict[str, Any],
-            schedule: str = "daily",
-            options: Dict[str, Any] = None
+            report_config: Dict[str, Any]
         ) -> Dict[str, Any]:
             """Schedule automated reports."""
             try:
                 # Implementation for report scheduling
-                result = {"scheduled": True, "schedule": schedule}
+                result = {"scheduled": True, "config": report_config}
                 return {"success": True, "result": result}
             except Exception as e:
                 logger.error(f"Error scheduling reports: {e}")
@@ -827,19 +1165,76 @@ class UnifiedMCPServer:
         logger.info("✅ Registered 30 unified MCP tools (including 5 new advanced analytics tools)")
 
     def _detect_content_type(self, content: str) -> str:
-        """Detect content type based on content or file extension."""
-        if content.startswith("http"):
-            return "website"
-        elif content.lower().endswith(('.pdf',)):
-            return "pdf"
-        elif content.lower().endswith(('.mp3', '.wav', '.m4a')):
-            return "audio"
-        elif content.lower().endswith(('.mp4', '.avi', '.mov')):
-            return "video"
-        elif content.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
-            return "image"
-        else:
-            return "text"
+        """Enhanced content type detection with bulk import and library URL support."""
+        content_lower = content.lower()
+        
+        # Check for bulk import requests first
+        if self._detect_bulk_import_request(content):
+            return "bulk_import_request"
+        
+        # Check for URLs
+        if content.startswith(('http://', 'https://')):
+            if 'openlibrary.org' in content_lower:
+                return "open_library"
+            elif 'ctext.org' in content_lower:
+                return "ctext_library"
+            elif any(ext in content_lower for ext in ['.pdf', '.doc', '.docx']):
+                return "pdf"
+            elif any(ext in content_lower for ext in ['.mp3', '.wav', '.m4a']):
+                return "audio"
+            elif any(ext in content_lower for ext in ['.mp4', '.avi', '.mov']):
+                return "video"
+            elif any(ext in content_lower for ext in ['.jpg', '.png', '.gif']):
+                return "image"
+            else:
+                return "website"
+        
+        # Check for file paths
+        if Path(content).exists():
+            ext = Path(content).suffix.lower()
+            if ext in ['.pdf', '.doc', '.docx', '.txt']:
+                return "pdf"
+            elif ext in ['.mp3', '.wav', '.m4a']:
+                return "audio"
+            elif ext in ['.mp4', '.avi', '.mov']:
+                return "video"
+            elif ext in ['.jpg', '.png', '.gif']:
+                return "image"
+        
+        # Default to text
+        return "text"
+    
+    def _is_openlibrary_url(self, content: str) -> bool:
+        """Check if content is an Open Library URL."""
+        return 'openlibrary.org' in content.lower()
+    
+    def _is_ctext_url(self, content: str) -> bool:
+        """Check if content is a ctext.org URL."""
+        return 'ctext.org' in content.lower()
+    
+    def _detect_bulk_import_request(self, content: str) -> bool:
+        """Detect if this is a bulk import request with multiple URLs."""
+        # Check for patterns like "add @url1 and @url2 to both vector and knowledge graph db"
+        import re
+        bulk_patterns = [
+            r"add\s+@[^\s]+\s+and\s+@[^\s]+",
+            r"add\s+@[^\s]+\s+to\s+both\s+vector\s+and\s+knowledge\s+graph",
+            r"add\s+@[^\s]+\s+to\s+both\s+databases",
+            r"add\s+@[^\s]+\s+and\s+@[^\s]+\s+to\s+both",
+            r"add\s+@[^\s]+\s+to\s+vector\s+and\s+knowledge\s+graph\s+db",
+            r"add\s+@[^\s]+\s+to\s+both\s+vector\s+and\s+knowledge\s+graph\s+db"
+        ]
+        
+        content_lower = content.lower()
+        return any(re.search(pattern, content_lower) for pattern in bulk_patterns)
+    
+    def _extract_urls_from_request(self, content: str) -> List[str]:
+        """Extract URLs from a bulk import request."""
+        import re
+        # Extract URLs that start with @
+        url_pattern = r'@(https?://[^\s]+)'
+        urls = re.findall(url_pattern, content)
+        return urls
 
     def get_http_app(self, path: str = "/mcp"):
         """Get the HTTP app for integration with FastAPI."""
@@ -853,6 +1248,421 @@ class UnifiedMCPServer:
         except Exception as e:
             logger.error(f"Error creating MCP HTTP app: {e}")
             return None
+
+    async def _process_bulk_import_request(self, content: str, language: str, options: Dict[str, Any]) -> Dict[str, Any]:
+        """Process bulk import request with multiple URLs."""
+        try:
+            # Extract URLs from the request
+            urls = self._extract_urls_from_request(content)
+            
+            if not urls:
+                return {"success": False, "error": "No URLs found in bulk import request"}
+            
+            logger.info(f"Processing bulk import request with {len(urls)} URLs: {urls}")
+            
+            results = []
+            total_entities = 0
+            total_relationships = 0
+            
+            # Process each URL
+            for url in urls:
+                try:
+                    if self._is_openlibrary_url(url):
+                        result = await self._process_openlibrary_content(url, language, options)
+                    elif self._is_ctext_url(url):
+                        result = await self._process_ctext_content(url, language, options)
+                    else:
+                        # Handle as standard URL
+                        result = await self.text_agent.process_content(url, language, options)
+                    
+                    if result.get("success"):
+                        results.append({
+                            "url": url,
+                            "success": True,
+                            "title": result.get("result", {}).get("metadata", {}).get("title", "Unknown"),
+                            "entities_count": result.get("result", {}).get("metadata", {}).get("entities_count", 0),
+                            "relationships_count": result.get("result", {}).get("metadata", {}).get("relationships_count", 0)
+                        })
+                        
+                        total_entities += result.get("result", {}).get("metadata", {}).get("entities_count", 0)
+                        total_relationships += result.get("result", {}).get("metadata", {}).get("relationships_count", 0)
+                    else:
+                        results.append({
+                            "url": url,
+                            "success": False,
+                            "error": result.get("error", "Unknown error")
+                        })
+                        
+                except Exception as e:
+                    logger.error(f"Error processing URL {url}: {e}")
+                    results.append({
+                        "url": url,
+                        "success": False,
+                        "error": str(e)
+                    })
+            
+            return {
+                "success": True,
+                "content_type": "bulk_import",
+                "urls_processed": len(urls),
+                "successful_imports": len([r for r in results if r["success"]]),
+                "failed_imports": len([r for r in results if not r["success"]]),
+                "total_entities": total_entities,
+                "total_relationships": total_relationships,
+                "results": results
+            }
+            
+        except Exception as e:
+            logger.error(f"Error processing bulk import request: {e}")
+            return {"success": False, "error": str(e)}
+    
+    async def _process_openlibrary_content(self, url: str, language: str, options: Dict[str, Any]) -> Dict[str, Any]:
+        """Process Open Library content with full pipeline."""
+        try:
+            # Download content from Open Library
+            webpage_content = await self._download_openlibrary_content(url)
+            
+            if not webpage_content:
+                return {"success": False, "error": "Failed to download content from Open Library"}
+            
+            # Extract text content
+            content_text = webpage_content.get("text", "")
+            title = webpage_content.get("title", "Unknown Book")
+            
+            # Extract metadata
+            metadata = self._extract_metadata_from_content(content_text, title, url)
+            
+            # Store in vector database
+            vector_id = await self.vector_store.store_content(content_text, metadata)
+            
+            # Extract entities and create knowledge graph
+            entities_result = await self.kg_agent.extract_entities(content_text, language)
+            entities = entities_result.get("content", [{}])[0].get("json", {}).get("entities", [])
+            
+            relationships_result = await self.kg_agent.map_relationships(content_text, entities)
+            relationships = relationships_result.get("content", [{}])[0].get("json", {}).get("relationships", [])
+            
+            # Create knowledge graph
+            transformed_entities = [
+                {
+                    "name": entity.get("text", ""),
+                    "type": entity.get("type", "CONCEPT"),
+                    "confidence": entity.get("confidence", 0.0),
+                    "source": title
+                }
+                for entity in entities
+            ]
+            
+            transformed_relationships = [
+                {
+                    "source": rel.get("source", ""),
+                    "target": rel.get("target", ""),
+                    "relationship_type": rel.get("type", "RELATED_TO"),
+                    "confidence": rel.get("confidence", 0.0),
+                    "source_type": title
+                }
+                for rel in relationships
+            ]
+            
+            kg_result = await self.knowledge_graph.create_knowledge_graph(transformed_entities, transformed_relationships)
+            
+            return {
+                "success": True,
+                "content_type": "open_library",
+                "title": title,
+                "vector_id": vector_id,
+                "entities_count": len(entities),
+                "relationships_count": len(relationships),
+                "knowledge_graph_nodes": kg_result.number_of_nodes(),
+                "knowledge_graph_edges": kg_result.number_of_edges(),
+                "content_length": len(content_text)
+            }
+            
+        except Exception as e:
+            logger.error(f"Error processing Open Library content: {e}")
+            return {"success": False, "error": str(e)}
+    
+    async def _process_ctext_content(self, url: str, language: str, options: Dict[str, Any]) -> Dict[str, Any]:
+        """Process ctext.org content with full pipeline."""
+        try:
+            # Download content from ctext.org
+            webpage_content = await self._download_ctext_content(url)
+            
+            if not webpage_content:
+                return {"success": False, "error": "Failed to download content from ctext.org"}
+            
+            # Extract text content
+            content_text = webpage_content.get("text", "")
+            title = webpage_content.get("title", "Unknown Text")
+            
+            # Extract metadata
+            metadata = self._extract_metadata_from_content(content_text, title, url)
+            metadata.update({
+                "source": "ctext.org",
+                "content_type": "classical_text"
+            })
+            
+            # Store in vector database
+            vector_id = await self.vector_store.store_content(content_text, metadata)
+            
+            # Extract entities and create knowledge graph
+            entities_result = await self.kg_agent.extract_entities(content_text, "zh")  # Chinese for classical texts
+            entities = entities_result.get("content", [{}])[0].get("json", {}).get("entities", [])
+            
+            relationships_result = await self.kg_agent.map_relationships(content_text, entities)
+            relationships = relationships_result.get("content", [{}])[0].get("json", {}).get("relationships", [])
+            
+            # Create knowledge graph
+            transformed_entities = [
+                {
+                    "name": entity.get("text", ""),
+                    "type": entity.get("type", "CONCEPT"),
+                    "confidence": entity.get("confidence", 0.0),
+                    "source": title
+                }
+                for entity in entities
+            ]
+            
+            transformed_relationships = [
+                {
+                    "source": rel.get("source", ""),
+                    "target": rel.get("target", ""),
+                    "relationship_type": rel.get("type", "RELATED_TO"),
+                    "confidence": rel.get("confidence", 0.0),
+                    "source_type": title
+                }
+                for rel in relationships
+            ]
+            
+            kg_result = await self.knowledge_graph.create_knowledge_graph(transformed_entities, transformed_relationships)
+            
+            return {
+                "success": True,
+                "content_type": "ctext_classical_text",
+                "title": title,
+                "vector_id": vector_id,
+                "entities_count": len(entities),
+                "relationships_count": len(relationships),
+                "knowledge_graph_nodes": kg_result.number_of_nodes(),
+                "knowledge_graph_edges": kg_result.number_of_edges(),
+                "content_length": len(content_text)
+            }
+            
+        except Exception as e:
+            logger.error(f"Error processing ctext.org content: {e}")
+            return {"success": False, "error": str(e)}
+    
+    async def _download_openlibrary_content(self, url: str) -> Optional[Dict[str, Any]]:
+        """Download content from Open Library URL."""
+        try:
+            # Use the web agent's _fetch_webpage method directly
+            webpage_data = await self.web_agent._fetch_webpage(url)
+            
+            # Process the webpage data
+            cleaned_text = self.web_agent._clean_webpage_text(webpage_data["html"])
+            
+            webpage_content = {
+                "url": url,
+                "title": webpage_data["title"],
+                "text": cleaned_text,
+                "html": webpage_data["html"],
+                "status_code": webpage_data["status_code"]
+            }
+            
+            logger.info(f"✅ Successfully downloaded Open Library content: {len(cleaned_text)} characters")
+            return webpage_content
+            
+        except Exception as e:
+            logger.error(f"❌ Error downloading Open Library content: {e}")
+            return None
+    
+    async def _download_ctext_content(self, url: str) -> Optional[Dict[str, Any]]:
+        """Download content from ctext.org URL."""
+        try:
+            # Use the web agent's _fetch_webpage method directly
+            webpage_data = await self.web_agent._fetch_webpage(url)
+            
+            # Process the webpage data
+            cleaned_text = self.web_agent._clean_webpage_text(webpage_data["html"])
+            
+            webpage_content = {
+                "url": url,
+                "title": webpage_data["title"],
+                "text": cleaned_text,
+                "html": webpage_data["html"],
+                "status_code": webpage_data["status_code"]
+            }
+            
+            logger.info(f"✅ Successfully downloaded ctext.org content: {len(cleaned_text)} characters")
+            return webpage_content
+            
+        except Exception as e:
+            logger.error(f"❌ Error downloading ctext.org content: {e}")
+            return None
+    
+    def _extract_metadata_from_content(self, content: str, title: str, url: str = "") -> Dict[str, Any]:
+        """Extract metadata from content text."""
+        import re
+        content_lower = content.lower()
+        
+        # Try to extract author
+        author = "Unknown"
+        author_patterns = ["by ", "author:", "written by", "author is"]
+        for pattern in author_patterns:
+            if pattern in content_lower:
+                start_idx = content_lower.find(pattern) + len(pattern)
+                end_idx = content.find("\n", start_idx)
+                if end_idx == -1:
+                    end_idx = start_idx + 100
+                author = content[start_idx:end_idx].strip()
+                break
+        
+        # Try to extract publication year
+        year_pattern = r'\b(19|20)\d{2}\b'
+        years = re.findall(year_pattern, content)
+        publication_year = years[0] if years else "Unknown"
+        
+        # Determine genre
+        genre_keywords = {
+            "fiction": ["novel", "story", "tale", "fiction"],
+            "non-fiction": ["history", "biography", "memoir", "essay"],
+            "poetry": ["poem", "poetry", "verse"],
+            "drama": ["play", "drama", "theater", "theatre"],
+            "science": ["science", "physics", "chemistry", "biology"],
+            "philosophy": ["philosophy", "philosophical", "ethics"],
+            "religion": ["religion", "religious", "spiritual", "theology"]
+        }
+        
+        detected_genre = "Literature"
+        for genre, keywords in genre_keywords.items():
+            if any(keyword in content_lower for keyword in keywords):
+                detected_genre = genre.title()
+                break
+        
+        # Extract subjects
+        subjects = []
+        subject_keywords = [
+            "history", "war", "peace", "love", "family", "politics", 
+            "society", "culture", "art", "music", "science", "philosophy",
+            "religion", "nature", "travel", "adventure", "mystery"
+        ]
+        
+        for subject in subject_keywords:
+            if subject in content_lower:
+                subjects.append(subject.title())
+        
+        return {
+            "title": title,
+            "author": author,
+            "publication_year": publication_year,
+            "genre": detected_genre,
+            "category": "Classic Literature" if "classic" in content_lower else detected_genre,
+            "subjects": subjects[:10],
+            "source": "Open Library" if "openlibrary.org" in url else "ctext.org" if "ctext.org" in url else "Unknown",
+            "source_url": url,
+            "content_type": "book_description",
+            "language": "en"
+        }
+
+    def _generate_visualization_html(
+        self,
+        data: Dict[str, Any],
+        visualization_type: str,
+        options: Optional[Dict[str, Any]] = None
+    ) -> str:
+        """Generate HTML content for visualizations."""
+        try:
+            # Basic HTML template for visualizations
+            html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{visualization_type.title()} Visualization</title>
+    <style>
+        body {{
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }}
+        .container {{
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }}
+        .header {{
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }}
+        .content {{
+            padding: 40px;
+        }}
+        .data-section {{
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+        }}
+        .data-key {{
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }}
+        .data-value {{
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+            font-family: monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{visualization_type.title()} Visualization</h1>
+            <p>Generated automatically by MCP Server</p>
+        </div>
+        
+        <div class="content">
+            <h2>Data Overview</h2>
+            <p>This visualization contains {len(data)} data sections.</p>
+            
+            <h2>Data Sections</h2>
+"""
+            
+            # Add data sections
+            for key, value in data.items():
+                html_content += f"""
+            <div class="data-section">
+                <div class="data-key">{key}</div>
+                <div class="data-value">{str(value)}</div>
+            </div>
+"""
+            
+            # Close HTML
+            html_content += """
+        </div>
+    </div>
+</body>
+</html>
+"""
+            
+            return html_content
+            
+        except Exception as e:
+            logger.error(f"Error generating visualization HTML: {e}")
+            return f"<html><body><h1>Error generating visualization</h1><p>{str(e)}</p></body></html>"
 
     def run(self, host: str = "localhost", port: int = 8000, debug: bool = False):
         """Run the MCP server (legacy method - use get_http_app for integration)."""

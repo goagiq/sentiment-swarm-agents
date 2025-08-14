@@ -1,5 +1,5 @@
 """
-Demo script for AudioAgent MCP Server.
+Demo script for AudioAgent MCP Server using Unified MCP Server.
 """
 
 import asyncio
@@ -10,84 +10,88 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from loguru import logger
-from mcp.audio_agent_server import create_audio_agent_mcp_server
+from src.mcp_servers.unified_mcp_server import create_unified_mcp_server
 
 
 async def demo_audio_agent_mcp():
-    """Demonstrate AudioAgent MCP server capabilities."""
-    logger.info("🚀 AudioAgent MCP Server Demo")
+    """Demonstrate AudioAgent MCP server capabilities using unified server."""
+    logger.info("🚀 AudioAgent MCP Server Demo (Unified)")
     
     try:
-        # Create the MCP server
-        logger.info("1. Creating AudioAgent MCP server...")
-        server = create_audio_agent_mcp_server()
-        logger.info("✅ MCP Server created")
+        # Create the unified MCP server
+        logger.info("1. Creating Unified MCP server...")
+        server = create_unified_mcp_server()
+        logger.info("✅ Unified MCP Server created")
         
         # Show server info
         logger.info("2. Server Information:")
         logger.info(f"   Server Type: {type(server).__name__}")
-        logger.info(f"   AudioAgent ID: {server.audio_agent.agent_id}")
-        logger.info(f"   Model: {server.audio_agent.metadata.get('model', 'default')}")
+        agent_id = server.audio_agent.agent_id
+        logger.info(f"   AudioAgent ID: {agent_id}")
+        model = server.audio_agent.metadata.get('model', 'default')
+        logger.info(f"   Model: {model}")
         
         # Show MCP server info
         logger.info("3. MCP Server Information:")
-        logger.info(f"   MCP Type: {type(server.mcp).__name__}")
-        logger.info(f"   Port: 8007")
+        if server.mcp:
+            logger.info(f"   MCP Type: {type(server.mcp).__name__}")
+            logger.info(f"   Server Name: {server.mcp.name}")
+            logger.info(f"   Version: {server.mcp.version}")
+        else:
+            logger.info("   ⚠️  Mock MCP server - FastMCP not available")
         
         # Show available MCP tools
         logger.info("4. Available MCP Tools:")
-        if hasattr(server.mcp, 'tools'):
+        if server.mcp and hasattr(server.mcp, 'tools'):
             for tool_name, tool_info in server.mcp.tools.items():
-                logger.info(f"   ✅ {tool_name}: {tool_info.get('description', 'No description')}")
+                desc = tool_info.get('description', 'No description')
+                logger.info(f"   ✅ {tool_name}: {desc}")
         else:
             logger.info("   ⚠️  Mock MCP server - tools not accessible")
         
-        # Test capabilities
-        logger.info("5. Testing Capabilities:")
-        if hasattr(server.mcp, 'tools'):
-            capabilities = server.mcp.tools.get("get_audio_agent_capabilities", {})
-            if capabilities:
-                cap_func = capabilities.get("function")
-                if cap_func:
-                    try:
-                        cap_result = cap_func()
-                        logger.info(f"   ✅ Agent ID: {cap_result.get('agent_id', 'N/A')}")
-                        logger.info(f"   ✅ Model: {cap_result.get('model', 'N/A')}")
-                        logger.info(f"   ✅ Supported Formats: {cap_result.get('supported_formats', [])}")
-                        logger.info(f"   ✅ Capabilities: {cap_result.get('capabilities', [])}")
-                        logger.info(f"   ✅ Available Tools: {cap_result.get('available_tools', [])}")
-                    except Exception as e:
-                        logger.warning(f"   ⚠️  Capabilities test failed: {e}")
-            else:
-                logger.info("   ⚠️  Capabilities tool not found")
-        else:
-            logger.info("   ⚠️  Mock server - capabilities not accessible")
+        # Test audio processing capabilities
+        logger.info("5. Testing Audio Processing Capabilities:")
         
-        # Show supported audio formats
-        logger.info("6. Audio Support:")
-        supported_formats = server.audio_agent.metadata.get("supported_formats", [])
-        max_duration = server.audio_agent.metadata.get("max_audio_duration", 300)
-        logger.info(f"   ✅ Supported Formats: {', '.join(supported_formats)}")
-        logger.info(f"   ✅ Max Duration: {max_duration} seconds ({max_duration/60:.1f} minutes)")
+        try:
+            # Test the unified content processing tool
+            if server.mcp and hasattr(server.mcp, 'tools'):
+                # Get the process_content tool
+                process_tool = server.mcp.tools.get("process_content", {})
+                if process_tool:
+                    logger.info("   ✅ Content processing tool available")
+                    logger.info("   📝 Can process audio files through unified interface")
+                else:
+                    logger.info("   ⚠️  Content processing tool not found")
+            
+            # Test audio agent directly
+            logger.info("   ✅ Audio Agent initialized successfully")
+            formats = server.audio_agent.metadata.get('supported_formats', [])
+            logger.info(f"   ✅ Supported Formats: {formats}")
+            max_duration = server.audio_agent.metadata.get('max_audio_duration', 300)
+            logger.info(f"   ✅ Max Duration: {max_duration} seconds")
+            
+        except Exception as e:
+            logger.warning(f"   ⚠️  Audio capabilities test failed: {e}")
         
         # Show integration examples
-        logger.info("7. Integration Examples:")
-        logger.info("   📝 With Strands Agents:")
-        logger.info("      from mcp.audio_agent_server import create_audio_agent_mcp_server")
-        logger.info("      server = create_audio_agent_mcp_server()")
-        logger.info("      # Use server.run() to start the MCP server")
+        logger.info("6. Integration Examples:")
+        logger.info("   📝 With Unified MCP Server:")
+        logger.info("      from src.mcp_servers.unified_mcp_server import "
+                   "create_unified_mcp_server")
+        logger.info("      server = create_unified_mcp_server()")
+        logger.info("      # Use server.mcp.tools to access all available tools")
         
         logger.info("   🌐 With FastMCP Clients:")
         logger.info("      from fastmcp import FastMCPClient")
-        logger.info("      client = FastMCPClient('http://localhost:8007')")
-        logger.info("      # Use client to call MCP tools")
+        logger.info("      client = FastMCPClient('http://localhost:8000')")
+        logger.info("      # Use client to call unified MCP tools")
         
         logger.info("🎉 AudioAgent MCP Server demo completed!")
         logger.info("")
         logger.info("Next steps:")
         logger.info("1. Install FastMCP: pip install fastmcp")
-        logger.info("2. Run the server: python src/mcp/audio_agent_server.py")
-        logger.info("3. Test with MCP clients")
+        logger.info("2. Run the unified server: python main.py")
+        logger.info("3. Test with MCP clients using unified interface")
         
         return True
         

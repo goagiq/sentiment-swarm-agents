@@ -3,40 +3,81 @@ kind: PersistentVolume
 metadata:
   name: sentiment-data-pv
   labels:
-    type: local
+    app: sentiment-analysis
+    environment: production
 spec:
-  storageClassName: manual
   capacity:
     storage: 10Gi
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: fast-ssd
   hostPath:
-    path: "/mnt/data"
+    path: /data/sentiment-analysis/data
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: sentiment-cache-pv
   labels:
-    type: local
+    app: sentiment-analysis
+    environment: production
 spec:
-  storageClassName: manual
   capacity:
     storage: 5Gi
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: fast-ssd
   hostPath:
-    path: "/mnt/cache"
+    path: /data/sentiment-analysis/cache
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: sentiment-backups-pv
+  labels:
+    app: sentiment-analysis
+    environment: production
+spec:
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: fast-ssd
+  hostPath:
+    path: /data/sentiment-analysis/backups
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: sentiment-results-pv
+  labels:
+    app: sentiment-analysis
+    environment: production
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: fast-ssd
+  hostPath:
+    path: /data/sentiment-analysis/results
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: sentiment-data-pvc
   namespace: sentiment-analysis
+  labels:
+    app: sentiment-analysis
+    environment: production
 spec:
-  storageClassName: manual
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
+  storageClassName: fast-ssd
   resources:
     requests:
       storage: 10Gi
@@ -46,10 +87,45 @@ kind: PersistentVolumeClaim
 metadata:
   name: sentiment-cache-pvc
   namespace: sentiment-analysis
+  labels:
+    app: sentiment-analysis
+    environment: production
 spec:
-  storageClassName: manual
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
+  storageClassName: fast-ssd
   resources:
     requests:
       storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sentiment-backups-pvc
+  namespace: sentiment-analysis
+  labels:
+    app: sentiment-analysis
+    environment: production
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: fast-ssd
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sentiment-results-pvc
+  namespace: sentiment-analysis
+  labels:
+    app: sentiment-analysis
+    environment: production
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: fast-ssd
+  resources:
+    requests:
+      storage: 10Gi

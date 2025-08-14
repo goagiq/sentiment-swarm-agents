@@ -16,7 +16,7 @@ from .pattern_storage import PatternStorage
 from .vector_pattern_engine import VectorPatternEngine
 from .anomaly_detector import AnomalyDetector
 from .pattern_classifier import PatternClassifier
-from .cross_modal_matcher import CrossModalMatcher
+from .cross_modal_matcher import EnhancedCrossModalMatcher
 
 __all__ = [
     'TemporalAnalyzer',
@@ -26,5 +26,5 @@ __all__ = [
     'VectorPatternEngine',
     'AnomalyDetector',
     'PatternClassifier',
-    'CrossModalMatcher'
+    'EnhancedCrossModalMatcher'
 ]

@@ -100,12 +100,13 @@ class ChineseConfig(BaseLanguageConfig):
         )
     
     def get_classical_chinese_patterns(self) -> Dict[str, List[str]]:
-        """Get comprehensive Classical Chinese patterns."""
+        """Get comprehensive Classical Chinese patterns for generic PDF processing."""
         return {
             "particles": [
                 r'之|其|者|也|乃|是|于|以|为|所|所以|而|则|故|然|若|虽|但|且|或',
                 r'[\u4e00-\u9fff]+(?:之|其|者|也|乃|是)',
                 r'(?:何|孰|安|焉|奚|胡|曷|盍|岂|宁|庸|讵)',  # Interrogative particles
+                r'(?:夫|盖|惟|唯|独|特|但|然|而|则|故|是以|是故)',  # Classical conjunctions
             ],
             "grammar_structures": [
                 r'[\u4e00-\u9fff]+(?:所|所以)[\u4e00-\u9fff]+',  # Nominalization
@@ -113,6 +114,8 @@ class ChineseConfig(BaseLanguageConfig):
                 r'[\u4e00-\u9fff]+(?:以|于)[\u4e00-\u9fff]+',    # Prepositional
                 r'[\u4e00-\u9fff]+(?:而|则|故|然)[\u4e00-\u9fff]+',  # Conjunctions
                 r'[\u4e00-\u9fff]+(?:者|也|焉|矣|哉|乎|耶|欤)',  # Sentence endings
+                r'[\u4e00-\u9fff]+(?:曰|云|谓|言|语|告|对|答)',  # Speech markers
+                r'[\u4e00-\u9fff]+(?:见|闻|知|思|想|念|忆|记)',  # Cognitive verbs
             ],
             "classical_entities": [
                 r'[\u4e00-\u9fff]{2,4}(?:子|先生|君|公|卿|氏|姓)',  # Classical titles
@@ -120,15 +123,31 @@ class ChineseConfig(BaseLanguageConfig):
                 r'(?:仁|义|礼|智|信|忠|孝|悌|节|廉)',              # Classical virtues
                 r'(?:道|德|理|气|阴阳|五行)',                      # Philosophical concepts
                 r'(?:诗|书|礼|易|春秋|论语|孟子|大学|中庸)',      # Classical texts
+                r'[\u4e00-\u9fff]+(?:王|帝|皇|后|妃|太子|公主)',   # Royal titles
+                r'[\u4e00-\u9fff]+(?:将军|元帅|将军|校尉|都尉)',   # Military titles
+                r'[\u4e00-\u9fff]+(?:丞相|尚书|侍郎|御史|太守)',   # Official titles
             ],
             "measure_words": [
                 r'(?:个|只|条|张|片|块|本|册|卷|篇|首|句|字|词)',
                 r'(?:丈|尺|寸|里|亩|顷|石|斗|升|斤|两|钱)',
+                r'(?:匹|头|口|尾|羽|只|双|对|副|套)',  # Classical measure words
             ],
             "time_expressions": [
                 r'(?:春|夏|秋|冬|年|月|日|时|刻|更|夜|晨|暮)',
                 r'(?:甲|乙|丙|丁|戊|己|庚|辛|壬|癸)',  # Heavenly stems
                 r'(?:子|丑|寅|卯|辰|巳|午|未|申|酉|戌|亥)',  # Earthly branches
+                r'[\u4e00-\u9fff]+(?:年|月|日|时|刻|更|夜)',  # Time units
+                r'(?:元|明|清|唐|宋|汉|秦|周|商|夏)',  # Dynasties
+            ],
+            "pdf_generic": [
+                r'[\u4e00-\u9fff]+(?:章|节|篇|卷|部|集|册)',  # Chapter markers
+                r'[\u4e00-\u9fff]+(?:注|疏|解|释|义|说)',     # Commentary markers
+                r'[\u4e00-\u9fff]+(?:序|跋|引|题|记|录)',     # Preface markers
+                r'(?:第|初|次|再|又|复|重|新|旧|古|今)',      # Ordinal and temporal
+                r'[\u4e00-\u9fff]+(?:页|面|行|段|句|字)',     # Document structure
+                r'[\u4e00-\u9fff]+(?:标题|题目|主题|内容|正文)',  # Content markers
+                r'[\u4e00-\u9fff]+(?:作者|编者|译者|校者)',   # Author markers
+                r'[\u4e00-\u9fff]+(?:出版|发行|印刷|制作)',   # Publication markers
             ]
         }
     
@@ -279,3 +298,60 @@ class ChineseConfig(BaseLanguageConfig):
                 "template"
             ]
         )
+    
+    def get_chinese_pdf_processing_settings(self) -> ProcessingSettings:
+        """Get specialized processing settings for Chinese PDF documents."""
+        return ProcessingSettings(
+            min_entity_length=1,  # Chinese PDFs can have single character entities
+            max_entity_length=25,  # Chinese PDF entities can be longer
+            confidence_threshold=0.75,  # Balanced threshold for Chinese PDFs
+            use_enhanced_extraction=True,
+            relationship_prompt_simplified=False,  # Use detailed prompts for PDFs
+            use_hierarchical_relationships=True,
+            entity_clustering_enabled=True,
+            fallback_strategies=[
+                "pdf_generic",
+                "classical_patterns",
+                "hierarchical",
+                "semantic",
+                "template"
+            ]
+        )
+    
+    def detect_chinese_pdf_type(self, text: str) -> str:
+        """Detect the type of Chinese PDF content for optimal processing."""
+        import re
+        
+        # Check for Classical Chinese indicators
+        classical_indicators = [
+            r'之|其|者|也|乃|是|于|以|为|所|所以|而|则|故|然',
+            r'仁|义|礼|智|信|忠|孝|悌|节|廉',
+            r'道|德|理|气|阴阳|五行',
+            r'诗|书|礼|易|春秋|论语|孟子|大学|中庸'
+        ]
+        
+        classical_score = 0
+        for pattern in classical_indicators:
+            if re.search(pattern, text):
+                classical_score += 1
+        
+        # Check for modern Chinese indicators
+        modern_indicators = [
+            r'的|地|得|了|着|过|吗|呢|吧|啊|呀|哇',
+            r'人工智能|机器学习|深度学习|神经网络',
+            r'公司|集团|企业|银行|大学|学院',
+            r'政府|部门|部|局|委员会|协会'
+        ]
+        
+        modern_score = 0
+        for pattern in modern_indicators:
+            if re.search(pattern, text):
+                modern_score += 1
+        
+        # Determine PDF type based on scores
+        if classical_score > modern_score and classical_score >= 2:
+            return "classical_chinese"
+        elif modern_score > classical_score and modern_score >= 2:
+            return "modern_chinese"
+        else:
+            return "mixed_chinese"  # Default for mixed or unclear content
