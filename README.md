@@ -1,6 +1,380 @@
 # Unified Sentiment Analysis System
 
-A consolidated and optimized sentiment analysis system with unified agents for text, audio, video, and image analysis. The system has been streamlined to use three comprehensive unified agents that replace multiple specialized implementations.
+A comprehensive, enterprise-grade sentiment analysis system with advanced AI capabilities, multi-agent architecture, and real-time processing. The system provides unified agents for text, audio, video, and image analysis with advanced analytics, knowledge graph generation, and multilingual support.
+
+## 🏗️ **System Architecture**
+
+The Unified Sentiment Analysis System follows a sophisticated multi-layer architecture designed for scalability, extensibility, and high performance:
+
+### **Architecture Overview**
+
+```mermaid
+graph TB
+    %% Frontend Layer
+    subgraph "Frontend Layer"
+        UI[Streamlit UI<br/>Interactive Dashboard]
+        API_CLIENTS[API Clients<br/>REST/MCP]
+    end
+
+    %% API Gateway Layer
+    subgraph "API Gateway Layer"
+        FASTAPI[FastAPI Server<br/>REST API Endpoints]
+        MCP_SERVER[Unified MCP Server<br/>25+ Tools]
+        CORS[CORS Middleware<br/>Security]
+    end
+
+    %% Orchestration Layer
+    subgraph "Orchestration Layer"
+        ORCHESTRATOR[SentimentOrchestrator<br/>Agent Swarm Manager]
+        ROUTER[Request Router<br/>Load Balancer]
+        CACHE[Request Cache<br/>TTL Management]
+    end
+
+    %% Agent Swarm Layer
+    subgraph "Agent Swarm Layer"
+        subgraph "Core Agents"
+            TEXT_AGENT[UnifiedTextAgent<br/>Strands + Swarm]
+            VISION_AGENT[UnifiedVisionAgent<br/>Image/Video]
+            AUDIO_AGENT[UnifiedAudioAgent<br/>Audio Processing]
+            FILE_AGENT[EnhancedFileExtractionAgent<br/>PDF/Documents]
+            WEB_AGENT[EnhancedWebAgent<br/>Web Content]
+            KG_AGENT[KnowledgeGraphAgent<br/>Entity/Relationships]
+        end
+        
+        subgraph "Advanced Analytics Agents"
+            FORECAST_AGENT[AdvancedForecastingAgent<br/>Time Series]
+            CAUSAL_AGENT[CausalAnalysisAgent<br/>Causal Inference]
+            ANOMALY_AGENT[AnomalyDetectionAgent<br/>Outlier Detection]
+            ML_AGENT[AdvancedMLAgent<br/>Deep Learning]
+            SCENARIO_AGENT[ScenarioAnalysisAgent<br/>What-if Analysis]
+        end
+        
+        subgraph "Support Agents"
+            SEARCH_AGENT[SemanticSearchAgent<br/>Vector Search]
+            REFLECTION_AGENT[ReflectionCoordinatorAgent<br/>Quality Control]
+            REPORT_AGENT[ReportGenerationAgent<br/>Documentation]
+            EXPORT_AGENT[DataExportAgent<br/>Data Export]
+        end
+    end
+
+    %% Core Services Layer
+    subgraph "Core Services Layer"
+        subgraph "Data Management"
+            VECTOR_DB[VectorDBManager<br/>Embeddings Storage]
+            KG_UTILITY[KnowledgeGraphUtility<br/>Graph Operations]
+            DUPLICATE_DETECT[DuplicateDetectionService<br/>Content Deduplication]
+        end
+        
+        subgraph "Processing Services"
+            TRANSLATION[TranslationService<br/>Multilingual Support]
+            PERFORMANCE_MON[PerformanceMonitor<br/>System Metrics]
+            SEMANTIC_SEARCH[SemanticSearchService<br/>Content Search]
+            IMAGE_PROC[ImageProcessingService<br/>Image Analysis]
+            VIDEO_PROC[VideoProcessingService<br/>Video Analysis]
+            YOUTUBE_DL[YouTubeDLService<br/>Video Download]
+        end
+        
+        subgraph "System Services"
+            MODEL_MGR[ModelManager<br/>Model Lifecycle]
+            ERROR_HANDLER[ErrorHandlingService<br/>Exception Management]
+            CACHING_SVC[CachingService<br/>Multi-level Cache]
+            MEMORY_MGR[MemoryManager<br/>Resource Management]
+        end
+    end
+
+    %% Configuration Layer
+    subgraph "Configuration Layer"
+        CONFIG[Centralized Config<br/>Settings Management]
+        LANG_CONFIG[Language Configs<br/>Multilingual Support]
+        MODEL_CONFIG[Model Configs<br/>Ollama Integration]
+        MCP_CONFIG[MCP Config<br/>Tool Management]
+    end
+
+    %% Storage Layer
+    subgraph "Storage Layer"
+        VECTOR_STORE[(Vector Database<br/>Chroma/FAISS)]
+        FILE_SYSTEM[(File System<br/>Processed Content)]
+        CACHE_STORE[(Cache Store<br/>Redis/Memory)]
+        RESULTS_DIR[(Results Directory<br/>Analysis Output)]
+    end
+
+    %% External Integrations
+    subgraph "External Integrations"
+        OLLAMA[Ollama Server<br/>Local Model Hosting]
+        EXTERNAL_APIS[External APIs<br/>Market Data, Social Media]
+        STRANDS[Strands Framework<br/>Agent Coordination]
+    end
+
+    %% Infrastructure Layer
+    subgraph "Infrastructure Layer"
+        DOCKER[Docker Containers<br/>Application Packaging]
+        NGINX[Nginx<br/>Reverse Proxy]
+        MONITORING[Monitoring Stack<br/>Performance Tracking]
+        K8S[Kubernetes<br/>Container Orchestration]
+    end
+
+    %% Data Flow Connections
+    UI --> FASTAPI
+    API_CLIENTS --> FASTAPI
+    API_CLIENTS --> MCP_SERVER
+    
+    FASTAPI --> ORCHESTRATOR
+    MCP_SERVER --> ORCHESTRATOR
+    CORS --> FASTAPI
+    
+    ORCHESTRATOR --> ROUTER
+    ROUTER --> CACHE
+    CACHE --> TEXT_AGENT
+    CACHE --> VISION_AGENT
+    CACHE --> AUDIO_AGENT
+    CACHE --> FILE_AGENT
+    CACHE --> WEB_AGENT
+    CACHE --> KG_AGENT
+    CACHE --> FORECAST_AGENT
+    CACHE --> CAUSAL_AGENT
+    CACHE --> ANOMALY_AGENT
+    CACHE --> ML_AGENT
+    CACHE --> SCENARIO_AGENT
+    CACHE --> SEARCH_AGENT
+    CACHE --> REFLECTION_AGENT
+    CACHE --> REPORT_AGENT
+    CACHE --> EXPORT_AGENT
+    
+    %% Agent to Service Connections
+    TEXT_AGENT --> TRANSLATION
+    VISION_AGENT --> IMAGE_PROC
+    AUDIO_AGENT --> VIDEO_PROC
+    FILE_AGENT --> YOUTUBE_DL
+    KG_AGENT --> KG_UTILITY
+    SEARCH_AGENT --> SEMANTIC_SEARCH
+    
+    %% Service to Storage Connections
+    VECTOR_DB --> VECTOR_STORE
+    KG_UTILITY --> FILE_SYSTEM
+    DUPLICATE_DETECT --> CACHE_STORE
+    CACHING_SVC --> CACHE_STORE
+    REPORT_AGENT --> RESULTS_DIR
+    
+    %% External Integration Connections
+    TEXT_AGENT --> OLLAMA
+    VISION_AGENT --> OLLAMA
+    AUDIO_AGENT --> OLLAMA
+    WEB_AGENT --> EXTERNAL_APIS
+    MODEL_MGR --> OLLAMA
+    TEXT_AGENT --> STRANDS
+    
+    %% Configuration Connections
+    CONFIG --> ORCHESTRATOR
+    LANG_CONFIG --> TRANSLATION
+    MODEL_CONFIG --> MODEL_MGR
+    MCP_CONFIG --> MCP_SERVER
+    
+    %% Infrastructure Connections
+    FASTAPI --> DOCKER
+    MCP_SERVER --> DOCKER
+    DOCKER --> NGINX
+    NGINX --> MONITORING
+    DOCKER --> K8S
+    
+    %% Styling
+    classDef frontend fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef api fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef orchestration fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef agent fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef service fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef config fill:#f1f8e9,stroke:#33691e,stroke-width:2px
+    classDef storage fill:#e0f2f1,stroke:#004d40,stroke-width:2px
+    classDef external fill:#fafafa,stroke:#424242,stroke-width:2px
+    classDef infrastructure fill:#f5f5f5,stroke:#212121,stroke-width:2px
+    
+    class UI,API_CLIENTS frontend
+    class FASTAPI,MCP_SERVER,CORS api
+    class ORCHESTRATOR,ROUTER,CACHE orchestration
+    class TEXT_AGENT,VISION_AGENT,AUDIO_AGENT,FILE_AGENT,WEB_AGENT,KG_AGENT,FORECAST_AGENT,CAUSAL_AGENT,ANOMALY_AGENT,ML_AGENT,SCENARIO_AGENT,SEARCH_AGENT,REFLECTION_AGENT,REPORT_AGENT,EXPORT_AGENT agent
+    class VECTOR_DB,KG_UTILITY,DUPLICATE_DETECT,TRANSLATION,PERFORMANCE_MON,SEMANTIC_SEARCH,IMAGE_PROC,VIDEO_PROC,YOUTUBE_DL,MODEL_MGR,ERROR_HANDLER,CACHING_SVC,MEMORY_MGR service
+    class CONFIG,LANG_CONFIG,MODEL_CONFIG,MCP_CONFIG config
+    class VECTOR_STORE,FILE_SYSTEM,CACHE_STORE,RESULTS_DIR storage
+    class OLLAMA,EXTERNAL_APIS,STRANDS external
+    class DOCKER,NGINX,MONITORING,K8S infrastructure
+```
+
+### **Architecture Layers**
+
+#### **1. Frontend Layer**
+- **Streamlit UI**: Interactive dashboard for data analysis and visualization
+- **API Clients**: REST and MCP protocol clients for system integration
+
+#### **2. API Gateway Layer**
+- **FastAPI Server**: Comprehensive REST API with 50+ endpoints
+- **Unified MCP Server**: 25+ consolidated tools for external integration
+- **CORS Middleware**: Security and cross-origin request handling
+
+#### **3. Orchestration Layer**
+- **SentimentOrchestrator**: Central agent swarm manager and request router
+- **Request Router**: Intelligent load balancing and request distribution
+- **Request Cache**: TTL-based caching for performance optimization
+
+#### **4. Agent Swarm Layer**
+- **Core Agents**: Specialized agents for different data types (text, vision, audio, files, web, knowledge graphs)
+- **Advanced Analytics Agents**: Forecasting, causal analysis, anomaly detection, machine learning
+- **Support Agents**: Search, reflection, reporting, and data export capabilities
+
+#### **5. Core Services Layer**
+- **Data Management**: Vector database, knowledge graph utilities, duplicate detection
+- **Processing Services**: Translation, performance monitoring, semantic search, media processing
+- **System Services**: Model management, error handling, caching, memory management
+
+#### **6. Configuration Layer**
+- **Centralized Config**: Unified settings management
+- **Language Configs**: Multilingual support and language-specific processing
+- **Model Configs**: Ollama integration and model lifecycle management
+- **MCP Config**: Tool management and external integration configuration
+
+#### **7. Storage Layer**
+- **Vector Database**: Embeddings and semantic search storage
+- **File System**: Processed content and analysis results
+- **Cache Store**: Multi-level caching for performance
+- **Results Directory**: Analysis output and generated reports
+
+#### **8. External Integrations**
+- **Ollama Server**: Local model hosting and inference
+- **External APIs**: Market data, social media, and third-party services
+- **Strands Framework**: Agent coordination and tool calling
+
+#### **9. Infrastructure Layer**
+- **Docker Containers**: Application packaging and deployment
+- **Nginx**: Reverse proxy and load balancing
+- **Monitoring Stack**: Performance tracking and system health
+- **Kubernetes**: Container orchestration and scaling
+
+### **Key Architectural Features**
+
+- **🔄 Multi-Agent Architecture**: Swarm-based processing with specialized agents
+- **🌐 API-First Design**: REST API and MCP protocol support
+- **📊 Advanced Analytics**: Machine learning, forecasting, and causal analysis
+- **🔍 Knowledge Graphs**: Entity extraction and relationship mapping
+- **🌍 Multilingual Support**: Language-specific processing and configurations
+- **⚡ Real-time Processing**: Streaming and live analytics capabilities
+- **🔧 Extensible Design**: Plugin-based architecture with MCP integration
+- **📈 Scalable Infrastructure**: Docker, Kubernetes, and monitoring support
+- **🛡️ Production Ready**: Error handling, caching, and performance optimization
+
+### **Component Breakdown**
+
+#### **Core Agents (src/agents/)**
+- **UnifiedTextAgent**: Text processing with Strands framework and swarm coordination
+- **UnifiedVisionAgent**: Image and video analysis with OCR and visual understanding
+- **UnifiedAudioAgent**: Audio processing, transcription, and audio content analysis
+- **EnhancedFileExtractionAgent**: PDF and document processing with OCR
+- **EnhancedWebAgent**: Web content scraping and analysis
+- **KnowledgeGraphAgent**: Entity extraction, relationship mapping, and graph analysis
+
+#### **Advanced Analytics Agents**
+- **AdvancedForecastingAgent**: Time series forecasting and prediction
+- **CausalAnalysisAgent**: Causal relationship discovery and analysis
+- **AnomalyDetectionAgent**: Statistical outlier detection and anomaly identification
+- **AdvancedMLAgent**: Deep learning and machine learning automation
+- **ScenarioAnalysisAgent**: What-if scenario modeling and impact analysis
+
+#### **Support Agents**
+- **SemanticSearchAgent**: Vector-based semantic search across all content
+- **ReflectionCoordinatorAgent**: Quality control and result validation
+- **ReportGenerationAgent**: Automated report generation and documentation
+- **DataExportAgent**: Data export and integration capabilities
+
+#### **Core Services (src/core/)**
+- **VectorDBManager**: Vector database operations and embeddings management
+- **KnowledgeGraphUtility**: Graph operations and relationship analysis
+- **TranslationService**: Multilingual translation and language processing
+- **PerformanceMonitor**: System performance tracking and optimization
+- **ModelManager**: Model lifecycle management and Ollama integration
+- **ErrorHandlingService**: Comprehensive error handling and recovery
+- **CachingService**: Multi-level caching for performance optimization
+
+#### **Configuration System (src/config/)**
+- **Centralized Config**: Unified settings management across all components
+- **Language Configs**: Language-specific processing rules and configurations
+- **Model Configs**: Ollama model configurations and parameters
+- **MCP Config**: Tool management and external integration settings
+
+#### **API Layer (src/api/)**
+- **FastAPI Application**: RESTful API with comprehensive endpoints
+- **Advanced Analytics Routes**: Machine learning and statistical analysis endpoints
+- **MCP Integration**: Model Context Protocol server for external tools
+
+#### **Testing Framework (Test/)**
+- **Integration Tests**: End-to-end system testing
+- **Performance Tests**: Load testing and performance validation
+- **Unit Tests**: Individual component testing
+- **Comprehensive Test Suite**: Automated testing with 100% success rate
+
+#### **Infrastructure (/)**
+- **Docker Configuration**: Containerization and deployment
+- **Nginx Setup**: Reverse proxy and load balancing
+- **Monitoring Stack**: Performance tracking and alerting
+- **Kubernetes Manifests**: Container orchestration and scaling
+
+### **Data Flow Architecture**
+
+#### **1. Input Processing**
+```
+User Request → API Gateway → Orchestrator → Agent Selection → Processing
+```
+
+- **REST API**: Direct HTTP requests to FastAPI endpoints
+- **MCP Tools**: External tool calls through MCP server
+- **File Uploads**: PDF, images, audio, video processing
+- **Web Content**: URL-based content extraction
+
+#### **2. Content Processing Pipeline**
+```
+Raw Content → Content Extraction → Analysis → Knowledge Graph → Results
+```
+
+- **Text Processing**: Sentiment analysis, entity extraction, language detection
+- **Media Processing**: OCR, transcription, visual analysis, audio processing
+- **Knowledge Graph**: Entity relationships, graph construction, pattern recognition
+- **Advanced Analytics**: Forecasting, causal analysis, anomaly detection
+
+#### **3. Storage and Retrieval**
+```
+Processed Data → Vector Database → Knowledge Graph → Cache → Results
+```
+
+- **Vector Storage**: Embeddings for semantic search
+- **Graph Storage**: Entity relationships and knowledge graphs
+- **File Storage**: Processed content and analysis results
+- **Cache Layer**: Performance optimization and quick retrieval
+
+#### **4. Output Generation**
+```
+Analysis Results → Report Generation → Visualization → Export → Delivery
+```
+
+- **Reports**: Automated report generation with insights
+- **Visualizations**: Interactive graphs and charts
+- **API Responses**: Structured data for external consumption
+- **MCP Tools**: Tool responses for external integrations
+
+### **Integration Patterns**
+
+#### **MCP Integration**
+- **25+ Unified Tools**: Consolidated functionality for external access
+- **Tool Categories**: Content processing, analysis, management, reporting
+- **Protocol Support**: Standard MCP protocol for tool calling
+- **Error Handling**: Robust error handling and fallback mechanisms
+
+#### **Ollama Integration**
+- **Local Model Hosting**: Self-hosted AI models for privacy and performance
+- **Model Management**: Dynamic model loading and configuration
+- **Fallback Support**: Multiple model options for reliability
+- **Performance Optimization**: Optimized inference and caching
+
+#### **External API Integration**
+- **Market Data**: Real-time financial and market information
+- **Social Media**: Social media content analysis and monitoring
+- **Web Services**: External data sources and APIs
+- **Third-party Tools**: Integration with specialized analysis tools
 
 ## 🆕 **Latest Updates - Phase 7.5 Advanced Analytics System Integration & Testing**
 
