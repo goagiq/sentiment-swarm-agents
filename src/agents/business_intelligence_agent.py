@@ -9,10 +9,10 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import pandas as pd
-import plotly.graph_objects as go
-import plotly.express as px
-from plotly.subplots import make_subplots
+# import pandas as pd
+# import plotly.graph_objects as go
+# import plotly.express as px
+# from plotly.subplots import make_subplots
 from loguru import logger
 
 from src.agents.base_agent import StrandsBaseAgent
@@ -25,7 +25,8 @@ class DashboardGenerator:
     """Generate interactive business dashboards."""
     
     def __init__(self):
-        self.config = bi_config.dashboard
+        # self.config = bi_config.dashboard
+        self.config = {"theme": "business"}
         self.cache = {}
     
     @with_error_handling("dashboard_generation")
@@ -47,7 +48,7 @@ class DashboardGenerator:
                 "generated_at": datetime.now().isoformat(),
                 "dashboard_type": dashboard_type,
                 "data_source": data_source,
-                "theme": self.config.theme
+                "theme": self.config.get("theme", "business")
             }
             
             logger.info(f"Dashboard generated successfully: {dashboard_type}")
@@ -59,98 +60,142 @@ class DashboardGenerator:
     
     async def _create_executive_dashboard(self, data_source: str) -> Dict[str, Any]:
         """Create executive-level dashboard."""
-        # Create executive summary charts
-        fig = make_subplots(
-            rows=2, cols=2,
-            subplot_titles=("Sentiment Overview", "Trend Analysis", "Key Metrics", "Performance"),
-            specs=[[{"type": "pie"}, {"type": "scatter"}],
-                   [{"type": "bar"}, {"type": "indicator"}]]
-        )
-        
-        # Add sample data (replace with actual data processing)
-        fig.add_trace(
-            go.Pie(labels=["Positive", "Neutral", "Negative"], values=[60, 25, 15]),
-            row=1, col=1
-        )
-        
-        fig.add_trace(
-            go.Scatter(x=["Jan", "Feb", "Mar", "Apr"], y=[10, 15, 13, 18]),
-            row=1, col=2
-        )
-        
-        fig.add_trace(
-            go.Bar(x=["Metric 1", "Metric 2", "Metric 3"], y=[85, 92, 78]),
-            row=2, col=1
-        )
-        
-        fig.add_trace(
-            go.Indicator(mode="gauge+number", value=87, title={"text": "Performance Score"}),
-            row=2, col=2
-        )
-        
-        fig.update_layout(height=600, title_text="Executive Dashboard")
-        
-        return {
-            "dashboard_type": "executive",
-            "charts": [fig.to_dict()],
-            "summary": "Executive summary of key business metrics and trends"
-        }
+        try:
+            # Create simple chart data without Plotly for now
+            chart_data = {
+                "type": "executive_dashboard",
+                "charts": [
+                    {
+                        "type": "pie",
+                        "title": "Sentiment Overview",
+                        "data": {
+                            "labels": ["Positive", "Neutral", "Negative"],
+                            "values": [60, 25, 15]
+                        }
+                    },
+                    {
+                        "type": "line",
+                        "title": "Trend Analysis",
+                        "data": {
+                            "x": ["Jan", "Feb", "Mar", "Apr"],
+                            "y": [10, 15, 13, 18]
+                        }
+                    },
+                    {
+                        "type": "bar",
+                        "title": "Key Metrics",
+                        "data": {
+                            "x": ["Metric 1", "Metric 2", "Metric 3"],
+                            "y": [85, 92, 78]
+                        }
+                    },
+                    {
+                        "type": "gauge",
+                        "title": "Performance Score",
+                        "data": {
+                            "value": 87,
+                            "min": 0,
+                            "max": 100
+                        }
+                    }
+                ]
+            }
+            
+            return {
+                "dashboard_type": "executive",
+                "charts": [chart_data],
+                "summary": "Executive summary of key business metrics and trends"
+            }
+        except Exception as e:
+            logger.error(f"Executive dashboard creation failed: {e}")
+            return {
+                "dashboard_type": "executive",
+                "charts": [],
+                "summary": "Executive summary of key business metrics and trends",
+                "error": str(e)
+            }
     
     async def _create_detailed_dashboard(self, data_source: str) -> Dict[str, Any]:
         """Create detailed dashboard with comprehensive metrics."""
-        # Create detailed analysis charts
-        charts = []
-        
-        # Sentiment distribution
-        sentiment_fig = px.histogram(
-            x=["Positive", "Neutral", "Negative"],
-            y=[60, 25, 15],
-            title="Sentiment Distribution"
-        )
-        charts.append(sentiment_fig.to_dict())
-        
-        # Trend analysis
-        trend_fig = px.line(
-            x=["Jan", "Feb", "Mar", "Apr", "May"],
-            y=[10, 15, 13, 18, 20],
-            title="Trend Analysis"
-        )
-        charts.append(trend_fig.to_dict())
-        
-        return {
-            "dashboard_type": "detailed",
-            "charts": charts,
-            "metrics": {
-                "total_analyses": 150,
-                "average_sentiment": 0.75,
-                "trend_direction": "positive"
+        try:
+            # Create simple chart data without Plotly for now
+            charts = [
+                {
+                    "type": "histogram",
+                    "title": "Sentiment Distribution",
+                    "data": {
+                        "x": ["Positive", "Neutral", "Negative"],
+                        "y": [60, 25, 15]
+                    }
+                },
+                {
+                    "type": "line",
+                    "title": "Trend Analysis",
+                    "data": {
+                        "x": ["Jan", "Feb", "Mar", "Apr", "May"],
+                        "y": [10, 15, 13, 18, 20]
+                    }
+                }
+            ]
+            
+            return {
+                "dashboard_type": "detailed",
+                "charts": charts,
+                "metrics": {
+                    "total_analyses": 150,
+                    "average_sentiment": 0.75,
+                    "trend_direction": "positive"
+                }
             }
-        }
+        except Exception as e:
+            logger.error(f"Detailed dashboard creation failed: {e}")
+            return {
+                "dashboard_type": "detailed",
+                "charts": [],
+                "metrics": {
+                    "total_analyses": 0,
+                    "average_sentiment": 0.0,
+                    "trend_direction": "neutral"
+                },
+                "error": str(e)
+            }
     
     async def _create_comprehensive_dashboard(self, data_source: str) -> Dict[str, Any]:
         """Create comprehensive dashboard with all features."""
-        # Combine executive and detailed features
-        executive = await self._create_executive_dashboard(data_source)
-        detailed = await self._create_detailed_dashboard(data_source)
-        
-        return {
-            "dashboard_type": "comprehensive",
-            "charts": executive["charts"] + detailed["charts"],
-            "summary": executive["summary"],
-            "metrics": detailed["metrics"],
-            "insights": [
-                "Positive sentiment trend observed",
-                "Key metrics showing improvement",
-                "Recommendation: Continue current strategy"
-            ]
-        }
+        try:
+            # Combine executive and detailed features
+            executive = await self._create_executive_dashboard(data_source)
+            detailed = await self._create_detailed_dashboard(data_source)
+            
+            return {
+                "dashboard_type": "comprehensive",
+                "charts": executive.get("charts", []) + detailed.get("charts", []),
+                "summary": executive.get("summary", "Comprehensive business analysis"),
+                "metrics": detailed.get("metrics", {}),
+                "insights": [
+                    "Positive sentiment trend observed",
+                    "Key metrics showing improvement",
+                    "Recommendation: Continue current strategy"
+                ]
+            }
+        except Exception as e:
+            logger.error(f"Comprehensive dashboard creation failed: {e}")
+            return {
+                "dashboard_type": "comprehensive",
+                "charts": [],
+                "summary": "Comprehensive business analysis",
+                "metrics": {},
+                "insights": [],
+                "error": str(e)
+            }
 
 
 class ReportGenerator:
     """Generate business reports and summaries."""
     
     def __init__(self):
-        self.config = bi_config.reporting
+        # self.config = bi_config.reporting
+        self.config = {"default_format": "json"}
     
     @with_error_handling("report_generation")
     async def generate_executive_report(self, content_data: str, report_type: str = "comprehensive") -> Dict[str, Any]:

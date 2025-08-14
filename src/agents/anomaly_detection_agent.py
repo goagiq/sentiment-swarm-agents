@@ -39,7 +39,18 @@ class AnomalyDetectionAgent(StrandsBaseAgent):
         
         # Initialize advanced analytics components
         self.config = AdvancedAnalyticsConfig()
-        self.anomaly_detector = AdvancedAnomalyDetector(self.config.anomaly_detection)
+        # Convert config to dict for compatibility
+        anomaly_config_dict = {
+            'contamination': self.config.anomaly_detection.contamination,
+            'threshold_method': self.config.anomaly_detection.threshold_method,
+            'severity_thresholds': self.config.anomaly_detection.severity_thresholds,
+            'isolation_forest_n_estimators': self.config.anomaly_detection.isolation_forest_n_estimators,
+            'one_class_svm_kernel': self.config.anomaly_detection.one_class_svm_kernel,
+            'one_class_svm_nu': self.config.anomaly_detection.one_class_svm_nu,
+            'lof_n_neighbors': self.config.anomaly_detection.lof_n_neighbors,
+            'statistical_threshold': self.config.anomaly_detection.statistical_threshold
+        }
+        self.anomaly_detector = AdvancedAnomalyDetector(anomaly_config_dict)
         
         # Set agent metadata
         self.metadata.update({
